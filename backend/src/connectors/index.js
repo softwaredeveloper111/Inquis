@@ -1,6 +1,6 @@
 import { logger } from "../lib/logger.js";
 import { getConnectorContext } from "../context/context.js";
-import { connectorAccountModel } from "../models/connectorAccount.model.js";
+import { connectorAccountModel } from "../models/connectoraccount.model.js";
 import { buildGmailTools, GMAIL_LABEL } from "../tools/gmail.tool.js";
 import { buildCalendarTools, CALENDAR_LABEL } from "../tools/calendar.tool.js";
 import { buildDriveTools, DRIVE_LABEL } from "../tools/drive.tool.js";
