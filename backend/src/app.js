@@ -24,7 +24,7 @@ import { generatedFilesRouter } from "./routes/generatedfiles.route.js";
 
 
 const app = express();
-
+app.set("trust proxy", 1);
 
 /** application middleware */
 app.use(express.static("public"))

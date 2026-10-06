@@ -1,9 +1,12 @@
 import dns from 'dns';
-dns.setServers(['8.8.8.8', '8.8.4.4']);
+import {config} from "./src/config/config.js"
+if (config.NODE_ENV === "development") {
+  dns.setServers(["8.8.8.8", "8.8.4.4"]);
+}
 
+import "./src/workers/index.js";
 
 import { app } from "./src/app.js";
-import {config} from "./src/config/config.js"
 import { connectToDB } from "./src/config/db.js";
 import {logger} from "./src/lib/logger.js";
 
