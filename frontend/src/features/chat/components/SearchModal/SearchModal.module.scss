@@ -1,0 +1,102 @@
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  background: var(--overlay);
+}
+.dialog {
+  display: flex;
+  flex-direction: column;
+  width: min(100%, 620px);
+  max-height: min(70dvh, 480px);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  animation: pop var(--duration-base) var(--ease-out);
+}
+.inputRow {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-4);
+  height: 56px;
+  flex-shrink: 0;
+  border-bottom: 1px solid var(--border-secondary);
+  color: var(--text-tertiary);
+  input {
+    flex: 1;
+    min-width: 0;
+    border: 0;
+    outline: 0;
+    background: none;
+    font: inherit;
+    font-size: var(--text-lg);
+    color: var(--text-primary);
+    &::placeholder {
+      color: var(--input-placeholder);
+    }
+  }
+}
+.results {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  padding: var(--space-2);
+}
+.label {
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  width: 100%;
+  padding: 10px var(--space-3);
+  border: 0;
+  background: none;
+  border-radius: var(--radius-md);
+  text-align: left;
+  &:hover,
+  &:focus-visible {
+    background: var(--bg-hover);
+    outline: 0;
+  }
+}
+.title {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--text-base);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tag {
+  flex-shrink: 0;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+.empty {
+  padding: var(--space-6);
+  text-align: center;
+  color: var(--text-muted);
+}

@@ -1,0 +1,70 @@
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+}
+
+.modal {
+  position: relative;
+  width: min(420px, 90vw);
+  padding: 22px;
+  border-radius: 20px;
+  background: var(--bg-elevated, #26262b);
+  color: var(--text, #fff);
+
+  h3 { margin: 0 0 4px; font-size: 20px; }
+  p { margin: 0 0 16px; opacity: 0.6; }
+
+  input {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.2));
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    outline: none;
+    &:focus { border-color: var(--accent, #20b8cd); }
+  }
+}
+
+.error {
+  display: block;
+  margin-top: 6px;
+  color: #ef4444;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 18px;
+
+  button {
+    padding: 8px 18px;
+    border-radius: 999px;
+    border: 1px solid var(--border, rgba(255, 255, 255, 0.2));
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+  }
+  .save { background: #fff; color: #000; border-color: #fff; }
+  button:disabled { opacity: 0.6; cursor: not-allowed; }
+}
+
+.close {
+  position: absolute;
+  top: 12px;
+  right: 14px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 22px;
+  cursor: pointer;
+}

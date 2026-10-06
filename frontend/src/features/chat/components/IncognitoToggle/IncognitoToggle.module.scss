@@ -1,0 +1,21 @@
+.btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  transition: background var(--duration-fast);
+  &:hover {
+    background: var(--bg-hover);
+  }
+}
+.active {
+  background: var(--color-accent-soft);
+  color: var(--color-accent);
+  &:hover {
+    background: var(--color-accent-soft);
+  }
+}

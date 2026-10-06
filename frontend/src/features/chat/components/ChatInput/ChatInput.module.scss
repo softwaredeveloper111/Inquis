@@ -1,0 +1,198 @@
+.box {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  padding: var(--space-3) var(--space-3) var(--space-2) var(--space-4);
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-sm);
+  transition:
+    border-color var(--duration-fast),
+    box-shadow var(--duration-fast);
+  &:focus-within {
+    border-color: var(--border-focus);
+    box-shadow: var(--focus-ring);
+  }
+  textarea {
+    display: block;
+    width: 100%;
+    min-height: 28px;
+    max-height: 200px;
+    padding: 2px 0;
+    border: 0;
+    outline: 0;
+    resize: none;
+    background: none;
+    font: inherit;
+    font-size: var(--text-md);
+    line-height: var(--leading-normal);
+    color: var(--text-primary);
+    &::placeholder {
+      color: var(--input-placeholder);
+    }
+  }
+}
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-top: var(--space-2);
+}
+.grow {
+  flex: 1;
+}
+.plus {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-full);
+  color: var(--text-tertiary);
+  &:hover:not(:disabled) {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+  }
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+.modelWrap {
+  position: relative;
+}
+.modelBtn {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  border: 0;
+  background: none;
+  border-radius: var(--radius-full);
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+  &:hover {
+    background: var(--bg-hover);
+  }
+}
+.modelName {
+  max-width: 110px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-dropdown);
+}
+.modelMenu {
+  position: absolute;
+  z-index: calc(var(--z-dropdown) + 1);
+  right: 0;
+  bottom: calc(100% + 8px);
+  width: 200px;
+  padding: 6px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  button {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: 8px 10px;
+    border: 0;
+    background: none;
+    border-radius: var(--radius-md);
+    font-size: var(--text-base);
+    text-align: left;
+    &:hover {
+      background: var(--bg-hover);
+    }
+  }
+}
+.send {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border: 0;
+  border-radius: var(--radius-full);
+  background: var(--color-accent);
+  color: var(--color-accent-contrast);
+  transition:
+    background var(--duration-fast),
+    transform var(--duration-fast);
+  &:hover:not(:disabled) {
+    background: var(--color-accent-hover);
+  }
+  &:active:not(:disabled) {
+    transform: scale(0.94);
+  }
+  &:disabled {
+    background: var(--bg-tertiary);
+    color: var(--text-disabled);
+    cursor: not-allowed;
+  }
+}
+
+/* ---------- File chip ---------- */
+.chip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  
+  max-width: 100%;
+ 
+  padding: 6px 10px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+
+ 
+}
+
+ .chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+
+
+.chipFailed {
+  border-color: #e5484d;
+  color: #e5484d;
+}
+.chipName {
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.chipStatus {
+  color: var(--text-tertiary);
+  white-space: nowrap;
+}
+.chipFailed .chipStatus {
+  color: inherit;
+}
+.chipRemove {
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: var(--text-tertiary);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  &:hover {
+    color: var(--text-primary);
+  }
+}

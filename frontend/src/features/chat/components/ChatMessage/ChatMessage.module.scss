@@ -1,0 +1,199 @@
+.userRow {
+  display: flex;
+  justify-content: flex-end;
+}
+.bubble {
+
+  padding: 10px var(--space-4);
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-xl);
+  font-size: var(--text-md);
+  line-height: var(--leading-normal);
+  overflow-wrap: anywhere;
+  white-space: pre-wrap;
+}
+
+.answer {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+.error {
+  align-self: flex-start;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid rgba(248, 113, 113, 0.45);
+  border-radius: var(--radius-lg);
+  background: rgba(127, 29, 29, 0.18);
+  color: #fecaca;
+
+  p {
+    margin: 0 0 var(--space-2);
+  }
+
+  button {
+    padding: 5px 10px;
+    border: 1px solid rgba(248, 113, 113, 0.5);
+    border-radius: var(--radius-md);
+    background: rgba(127, 29, 29, 0.3);
+    color: inherit;
+    font: inherit;
+    cursor: pointer;
+    transition: background var(--duration-fast);
+
+    &:hover {
+      background: rgba(127, 29, 29, 0.55);
+    }
+
+    &:focus-visible {
+      outline: 2px solid #fca5a5;
+      outline-offset: 2px;
+    }
+  }
+}
+.label {
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+.body {
+  font-family: "Source Serif 4", Georgia, serif;
+  font-size: var(--text-lg);
+  line-height: var(--leading-relaxed);
+  color: var(--text-primary);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  ul {
+    padding-left: 22px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
+   pre {
+    background: #0d1117;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 14px;
+    margin: 12px 0;
+    overflow-x: auto;
+  }
+
+  code {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    font-size: 13px;
+  }
+
+  // inline code
+  :not(pre) > code {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 2px 6px;
+    border-radius: 6px;
+  }
+
+  pre code {
+    background: none;
+    padding: 0;
+  }
+
+  h1, h2, h3 { margin: 16px 0 8px; }
+  ul, ol { padding-left: 22px; }
+
+  table { border-collapse: collapse; margin: 12px 0; }
+  th, td {
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    padding: 6px 10px;
+  }
+
+}
+.cite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  margin-left: 3px;
+  border-radius: var(--radius-full);
+  background: var(--citation-bg);
+  color: var(--citation-text);
+  font-family: var(--font-sans);
+  font-size: var(--text-xs);
+  vertical-align: 2px;
+  cursor: pointer;
+  transition: background var(--duration-fast);
+  &:hover {
+    background: var(--citation-hover-bg);
+    color: var(--citation-hover-text);
+  }
+}
+.actions {
+  display: flex;
+  button {
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border: 0;
+    background: none;
+    border-radius: var(--radius-md);
+    color: var(--text-tertiary);
+    &:hover {
+      background: var(--bg-hover);
+      color: var(--text-primary);
+    }
+  }
+}
+
+
+
+.userCol {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--space-2);
+  max-width: 85%;
+}
+.attachments {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--space-2);
+}
+.attachImg {
+  display: block;
+  max-width: 220px;
+  max-height: 220px;
+  object-fit: cover;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-primary);
+}
+.attachFile {
+  padding: 8px 12px;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-primary);
+  border-radius: var(--radius-lg);
+  font-size: var(--text-sm);
+}
+.attachName {
+  display: block;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+
+
+.body a[href] {
+  color: light-dark(#0284c7, #38bdf8); // sky blue (light/dark dono theme mein readable)
+  text-decoration: underline;
+  text-decoration-color: light-dark(rgb(226 224 222), #fbbf24); // amber underline
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+  font-weight: var(--weight-medium);
+  transition: color var(--duration-fast) var(--ease-out);
+
+  &:hover {
+    color: light-dark(#0369a1, #7dd3fc);
+  }
+}

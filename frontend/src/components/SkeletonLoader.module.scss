@@ -1,0 +1,38 @@
+// SkeletonLoader.module.scss
+
+.skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  max-width: 500px;
+
+  span {
+    height: 12px;
+    border-radius: 6px;
+    background: var(--color-border);
+    animation: pulse 1.4s ease-in-out infinite;
+
+    &:nth-child(1) {
+      width: 90%;
+    }
+
+    &:nth-child(2) {
+      width: 75%;
+    }
+
+    &:nth-child(3) {
+      width: 45%;
+    }
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.4;
+  }
+
+  50% {
+    opacity: 0.8;
+  }
+}

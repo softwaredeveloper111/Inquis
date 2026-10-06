@@ -1,0 +1,165 @@
+.page {
+  min-height: 100vh;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  background: var(--bg-primary);
+  color: var(--text-primary);
+
+  font-family: var(--font-sans);
+}
+
+.content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+/* =================================
+   PERPLEXITY LOGO
+================================= */
+
+.logoWrap {
+  width: 150px;
+  height: auto;
+
+  margin-bottom: var(--space-8);
+
+  opacity: 0.5;
+
+  -webkit-mask-image: radial-gradient(
+    circle,
+    black 0%,
+    black 45%,
+    transparent 100%
+  );
+
+  mask-image: radial-gradient(
+    circle,
+    black 0%,
+    black 45%,
+    transparent 100%
+  );
+}
+
+.logo {
+  display: block;
+
+  width: 100%;
+  height: auto;
+
+  overflow: visible;
+
+  color: var(--text-muted);
+}
+
+/* =================================
+   ANIMATED PATH
+================================= */
+
+.logoPath {
+  stroke: currentColor;
+  stroke-width: 0.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+
+  animation: logoDraw 2.8s ease-in-out infinite;
+}
+
+@keyframes logoDraw {
+  0% {
+    stroke-dashoffset: 220;
+    opacity: 0.15;
+  }
+
+  20% {
+    opacity: 0.35;
+  }
+
+  50% {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+
+  75% {
+    stroke-dashoffset: -40;
+    opacity: 0.65;
+  }
+
+  100% {
+    stroke-dashoffset: -220;
+    opacity: 0.15;
+  }
+}
+
+/* =================================
+   TEXT
+================================= */
+
+.title {
+  margin: 0 0 var(--space-1);
+
+  font-size: var(--text-base);
+  line-height: var(--leading-normal);
+  font-weight: var(--weight-medium);
+
+  color: var(--text-primary);
+}
+
+.subtitle {
+  margin: 0;
+
+  font-size: var(--text-sm);
+  line-height: var(--leading-normal);
+  font-weight: var(--weight-regular);
+
+  color: var(--text-secondary);
+}
+
+/* =================================
+   BUTTON
+================================= */
+
+.button {
+  margin-top: var(--space-8);
+
+  padding: var(--space-2) 15px;
+
+  border: 1px solid var(--border-secondary);
+  border-radius: var(--radius-md);
+
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+
+  font-family: inherit;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-medium);
+
+  cursor: pointer;
+
+  transition:
+    background var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+.button:hover {
+  background: var(--bg-hover);
+  border-color: var(--border-primary);
+}
+
+.button:active {
+  background: var(--bg-active);
+}
+
+.button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
