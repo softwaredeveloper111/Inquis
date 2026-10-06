@@ -17,6 +17,10 @@ import {Navigate} from "react-router-dom"
 import Dashboard from "../../features/chat/pages/Dashboard";
 import Connectors from "../../features/connectors/pages/Connectors";
 
+import PrivacyPage from "../../features/legal/pages/PrivacyPage";
+import TermsPage from "../../features/legal/pages/TermsPage";
+
+
 const router = createBrowserRouter([
   {
     element: <PublicRoute />,
@@ -27,6 +31,8 @@ const router = createBrowserRouter([
           { path: "/login", element: <LoginPage /> },
           { path: "/signup", element: <SignupPage /> },
           { path: "/reset-password", element: <ResetPasswordPage /> },
+          { path: "/privacy", element: <PrivacyPage /> },
+          { path: "/terms", element: <TermsPage /> },
         ],
       },
     ],
