@@ -3,7 +3,7 @@ import { z } from "zod";
 import { logger } from "../lib/logger.js";
 import { getConnectorContext } from "../context/context.js";
 import { buildPdf, sanitizeForPdf } from "../utils/pdf.util.js";
-import { FileGenError, cleanName, fixNewlines, saveGeneratedFile } from "../services/generatedFiles.service.js";
+import { FileGenError, cleanName, fixNewlines, saveGeneratedFile } from "../services/generatedfiles.service.js";
 
 const MAX_TXT_CHARS = 200_000;
 const MAX_PDF_CHARS = 60_000;

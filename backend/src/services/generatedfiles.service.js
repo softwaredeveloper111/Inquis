@@ -1,6 +1,6 @@
 import crypto from "crypto";
 import { config } from "../config/config.js";
-import { generatedFileModel } from "../models/generatedFile.model.js";
+import { generatedFileModel } from "../models/generatedfile.model.js";
 
 export class FileGenError extends Error {}
 
