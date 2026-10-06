@@ -4,7 +4,7 @@ import { config } from "../config/config.js";
 import { redis } from "../config/cache.js";
 import { logger } from "../lib/logger.js";
 import { SERVICES, SERVICE_KEYS, BASE_SCOPES } from "../constants/connectors.constants.js";
-import { connectorAccountModel } from "../models/connectorAccount.model.js";
+import { connectorAccountModel } from "../models/connectoraccount.model.js";
 import { encrypt, decrypt } from "../utils/crypto.util.js";
 
 const trim = (u) => u.replace(/\/+$/, "");
