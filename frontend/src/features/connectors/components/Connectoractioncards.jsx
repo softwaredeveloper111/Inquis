@@ -2,7 +2,7 @@ import { useState, useSyncExternalStore } from "react";
 import { toast } from "sonner";
 import { confirmConnectorAction, cancelConnectorAction } from "../services/Connectorsapi";
 import { subscribeActions, getActions, removeConnectorAction } from "../store/connectoractions.store";
-import styles from "./ConnectorActionCards.module.scss";
+import styles from "./connectoractioncards.module.scss";
 
 function Card({ action }) {
   const [busy, setBusy] = useState(false);

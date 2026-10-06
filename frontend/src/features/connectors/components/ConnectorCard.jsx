@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Plus, Check, Loader2 } from "lucide-react";
-import styles from "./ConnectorCard.module.scss";
+import styles from "./connectorCard.module.scss";
 
 export default function ConnectorCard({ name, description, Icon, connected, email, busy, disabled, onConnect, onDisconnect }) {
   const [confirming, setConfirming] = useState(false);
