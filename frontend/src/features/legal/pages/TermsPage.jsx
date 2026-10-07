@@ -1,4 +1,4 @@
-import LegalPage from "./LegalPage";
+import LegalPage from "./Legalpage";
 import { APP_NAME, CONTACT_EMAIL, UPDATED } from "../config/legal.config";
 
 const sections = [
