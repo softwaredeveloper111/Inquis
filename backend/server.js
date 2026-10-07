@@ -4,8 +4,8 @@ if (config.NODE_ENV === "development") {
   dns.setServers(["8.8.8.8", "8.8.4.4"]);
 }
 
-/** enable only in production */
-// import "./src/workers/index.js";
+/** disabled  in development */
+import "./src/workers/index.js";
 
 import { app } from "./src/app.js";
 import { connectToDB } from "./src/config/db.js";
