@@ -1,9 +1,16 @@
 .page {
   flex: 1;
-  padding: var(--space-6) var(--space-4);
+  min-height: 0;
+  overflow-y: auto;
+  width: 100%;
+  -webkit-overflow-scrolling: touch;
+}
+
+.container {
   max-width: var(--content-max-width);
   width: 100%;
   margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-12);
 }
 
 .title {

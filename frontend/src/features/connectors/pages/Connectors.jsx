@@ -33,29 +33,31 @@ export default function Connectors() {
 
   return (
     <div className={styles.page}>
-      <h3 className={styles.title}>Connectors</h3>
-      <p className={styles.subtitle}>
-        Connect your Google apps so the assistant can work with your own emails, events and files. You can disconnect anytime.
-      </p>
+      <div className={styles.container}>
+        <h3 className={styles.title}>Connectors</h3>
+        <p className={styles.subtitle}>
+          Connect your Google apps so the assistant can work with your own emails, events and files. You can disconnect anytime.
+        </p>
 
-      <div className={styles.list}>
-        {CONNECTOR_LIST.map(({ service, name, description, Icon }) => (
-          <ConnectorCard
-            key={service}
-            name={name}
-            description={description}
-            Icon={Icon}
-            connected={Boolean(items[service]?.connected)}
-            email={items[service]?.email}
-            busy={busy === service}
-            disabled={loading || (busy !== null && busy !== service)}
-            onConnect={() => connect(service)}
-            onDisconnect={() => disconnect(service)}
-          />
-        ))}
+        <div className={styles.list}>
+          {CONNECTOR_LIST.map(({ service, name, description, Icon }) => (
+            <ConnectorCard
+              key={service}
+              name={name}
+              description={description}
+              Icon={Icon}
+              connected={Boolean(items[service]?.connected)}
+              email={items[service]?.email}
+              busy={busy === service}
+              disabled={loading || (busy !== null && busy !== service)}
+              onConnect={() => connect(service)}
+              onDisconnect={() => disconnect(service)}
+            />
+          ))}
+        </div>
+
+        <GoogleWarningCard />
       </div>
-
-      <GoogleWarningCard />
     </div>
   );
 }

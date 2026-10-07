@@ -27,6 +27,7 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
 }
 .scroll {
   flex: 1;
@@ -34,8 +35,8 @@
   overflow-y: auto;
   scroll-behavior: smooth;
   overscroll-behavior: contain;
-    overflow-anchor: none;
-
+  overflow-anchor: none;
+  -webkit-overflow-scrolling: touch;
 }
 .thread {
   max-width: var(--content-max-width);
@@ -46,6 +47,7 @@
   gap: var(--space-8);
 }
 .dock {
+  flex-shrink: 0;
   width: 100%;
   max-width: var(--content-max-width);
   margin: 0 auto;

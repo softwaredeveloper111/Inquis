@@ -42,15 +42,16 @@ const stickRef = useRef(true); // user bottom ke paas hai?
   const hasMoreOlder = !!(activeChatId && messagesMeta[activeChatId]?.hasMore);
 
   useEffect(() => {
-  const off = () => toast.error("You're offline");
-  const on = () => toast.success("Back online");
-  window.addEventListener("offline", off);
-  window.addEventListener("online", on);
-  return () => {
-    window.removeEventListener("offline", off);
-    window.removeEventListener("online", on);
-  };
-}, []);
+    window.scrollTo(0, 0);
+    const off = () => toast.error("You're offline");
+    const on = () => toast.success("Back online");
+    window.addEventListener("offline", off);
+    window.addEventListener("online", on);
+    return () => {
+      window.removeEventListener("offline", off);
+      window.removeEventListener("online", on);
+    };
+  }, []);
 
   // Sirf tab fetch karo jab messages store mein na ho
   useEffect(() => {
