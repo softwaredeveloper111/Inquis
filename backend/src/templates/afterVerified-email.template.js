@@ -65,7 +65,7 @@ const afterEmailVerfiedTemplate = ()=>{
                       letter-spacing: -0.5px;
                     "
                   >
-                    Perplexity
+                    Inquis
                   </div>
                 </td>
               </tr>
@@ -114,7 +114,7 @@ const afterEmailVerfiedTemplate = ()=>{
                     "
                   >
                     Your email address has been successfully verified.
-                    You can now log in to your Perplexity account and get started.
+                    You can now log in to your Inquis account and get started.
                   </p>
 
                
@@ -170,7 +170,7 @@ const afterEmailVerfiedTemplate = ()=>{
                       color: #a3a3a3;
                     "
                   >
-                    © ${new Date().getFullYear()} Perplexity. All rights reserved.
+                    © ${new Date().getFullYear()} Inquis. All rights reserved.
                   </p>
                 </td>
               </tr>

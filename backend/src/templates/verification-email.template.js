@@ -66,7 +66,7 @@ const verificationEmailTemplate = ({ username, emailVerificationToken }) => {
                         letter-spacing: -0.5px;
                       "
                     >
-                      Perplexity
+                      Inquis
                     </div>
                   </td>
                 </tr>
@@ -110,7 +110,7 @@ const verificationEmailTemplate = ({ username, emailVerificationToken }) => {
                       "
                     >
                       Thank you for creating an account with
-                      <strong style="color: #171717;">Perplexity</strong>.
+                      <strong style="color: #171717;">Inquis</strong>.
                       Please verify your email address to complete your registration.
                     </p>
 
@@ -165,7 +165,7 @@ const verificationEmailTemplate = ({ username, emailVerificationToken }) => {
                         color: #737373;
                       "
                     >
-                      If you did not create a Perplexity account,
+                      If you did not create an Inquis account,
                       you can safely ignore this email.
                     </p>
 
@@ -190,7 +190,7 @@ const verificationEmailTemplate = ({ username, emailVerificationToken }) => {
                         color: #a3a3a3;
                       "
                     >
-                      © ${new Date().getFullYear()} Perplexity. All rights reserved.
+                      © ${new Date().getFullYear()} Inquis. All rights reserved.
                     </p>
                   </td>
                 </tr>

@@ -37,7 +37,7 @@ export const invalidVerificationTemplate = () => `
         font-size: 28px;
         font-weight: 700;
       ">
-        Perplexity
+        Inquis
       </h1>
     </div>
 
@@ -96,7 +96,7 @@ export const invalidVerificationTemplate = () => `
         color: #999999;
         font-size: 12px;
       ">
-        &copy; 2026 Perplexity. All rights reserved.
+        &copy; 2026 Inquis. All rights reserved.
       </p>
     </div>
 

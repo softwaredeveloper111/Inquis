@@ -20,7 +20,7 @@ const emailWorker = new Worker(
 
       await sendEmail(
         email,
-        "[Perplexity] Verify your email address",
+        "[Inquis] Verify your email address",
         "Please verify your email address to complete your registration.",
         html
       );
@@ -35,7 +35,7 @@ const emailWorker = new Worker(
 
       await sendEmail(
         email,
-        "[Perplexity] Reset your password",
+        "[Inquis] Reset your password",
         "Reset your password using the provided link.",
         html
       );

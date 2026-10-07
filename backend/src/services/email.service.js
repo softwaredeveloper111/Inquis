@@ -7,7 +7,7 @@ const resend = new Resend(config.RESEND_API_KEY);
 const sendEmail = async (to, subject, text, html) => {
   try {
     const { data, error } = await resend.emails.send({
-      from: "Perplexity <perplexity@perplexity.techy.fun>",
+      from: "Inquis <inquis@techy.fun>",
       to: [to],
       subject,
       text,

@@ -64,7 +64,7 @@ const alreadyEmailVerifiedTemplate = ()=>{
                       letter-spacing: -0.5px;
                     "
                   >
-                    Perplexity
+                    Inquis
                   </div>
                 </td>
               </tr>
@@ -115,7 +115,7 @@ const alreadyEmailVerifiedTemplate = ()=>{
                     "
                   >
                     Your email address has already been verified.
-                    You can continue to your Perplexity account.
+                    You can continue to your Inquis account.
                   </p>
 
                 
@@ -170,7 +170,7 @@ const alreadyEmailVerifiedTemplate = ()=>{
                       color: #a3a3a3;
                     "
                   >
-                    © ${new Date().getFullYear()} Perplexity. All rights reserved.
+                    © ${new Date().getFullYear()} Inquis. All rights reserved.
                   </p>
                 </td>
               </tr>

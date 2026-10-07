@@ -37,7 +37,7 @@ const forgotPasswordEmailTemplate = ({username, resetUrl}) => {
         font-size: 24px;
         font-weight: 700;
       ">
-        Perplexity
+        Inquis
       </h1>
     </div>
 
@@ -65,7 +65,7 @@ const forgotPasswordEmailTemplate = ({username, resetUrl}) => {
         line-height: 1.6;
         color: #555555;
       ">
-        We received a request to reset your Perplexity password.
+        We received a request to reset your Inquis password.
         Click the button below to create a new password.
       </p>
 
@@ -120,7 +120,7 @@ const forgotPasswordEmailTemplate = ({username, resetUrl}) => {
         font-size: 12px;
         color: #999999;
       ">
-        © ${new Date().getFullYear()} Perplexity. All rights reserved.
+        © ${new Date().getFullYear()} Inquis. All rights reserved.
       </p>
     </div>
 
