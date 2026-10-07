@@ -19,7 +19,18 @@ function ChatMessage({
 
   const [copied, setCopied] = useState(false);
 
-    if (message.role === "user") {
+  const copy = async () => {
+    if (!message?.text) return;
+    try {
+      await navigator.clipboard.writeText(message.text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (error) {
+      console.error("Failed to copy:", error);
+    }
+  };
+
+  if (message.role === "user") {
     const attachments = message.attachments || [];
     return (
       <div className={styles.userRow}>
@@ -39,30 +50,39 @@ function ChatMessage({
               )}
             </div>
           )}
-          {message.text && <div className={styles.bubble}>{message.text}</div>}
+          {message.text && (
+            <>
+              <div className={styles.bubble}>{message.text}</div>
+              <div className={styles.actions}>
+                <button onClick={copy} aria-label="Copy message" title="Copy">
+                  {copied ? <Icons.Check size={16} /> : <Icons.Copy size={16} />}
+                </button>
+              </div>
+            </>
+          )}
         </div>
       </div>
     );
   }
 
   // AI generate kar raha hai
-if (streaming) {
-  const isImage = streamingStatus === "image" || (imageHint && !streamingText);
-  const imageDone = /!\[[^\]]*\]\([^)]+\)/.test(streamingText);
-  const imagePending = isImage && !imageDone;
+  if (streaming) {
+    const isImage = streamingStatus === "image" || (imageHint && !streamingText);
+    const imageDone = /!\[[^\]]*\]\([^)]+\)/.test(streamingText);
+    const imagePending = isImage && !imageDone;
 
-  return (
-    <div className={styles.answer}>
-      <span className={styles.label}>
-  {imagePending ? "Creating image" : isImage ? "Created image" : "Thinking"}
-</span>
-      <div className={styles.body}>
-        {streamingText && <Markdown>{streamingText}</Markdown>}
-        {imagePending ? <ImageSkeleton /> : !streamingText && <SkeletonLoader />}
+    return (
+      <div className={styles.answer}>
+        <span className={styles.label}>
+          {imagePending ? "Creating image" : isImage ? "Created image" : "Thinking"}
+        </span>
+        <div className={styles.body}>
+          {streamingText && <Markdown>{streamingText}</Markdown>}
+          {imagePending ? <ImageSkeleton /> : !streamingText && <SkeletonLoader />}
+        </div>
       </div>
-    </div>
-  );
-}
+    );
+  }
 
   // Generation fail
   if (streamingError) {
@@ -77,17 +97,6 @@ if (streaming) {
   }
 
   // Completed assistant message
-  const copy = async () => {
-    try {
-      await navigator.clipboard.writeText(message.text);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 1500);
-    } catch (error) {
-      console.error("Failed to copy:", error);
-    }
-  };
-
-  
   const hasImage = /!\[[^\]]*\]\([^)]+\)/.test(message.text);
 
   return (

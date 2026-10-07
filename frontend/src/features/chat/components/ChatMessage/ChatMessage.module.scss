@@ -137,6 +137,7 @@
     background: none;
     border-radius: var(--radius-md);
     color: var(--text-tertiary);
+    cursor: pointer;
     &:hover {
       background: var(--bg-hover);
       color: var(--text-primary);
