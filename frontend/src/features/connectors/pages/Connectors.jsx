@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { toast } from "sonner";
 import ConnectorCard from "../components/ConnectorCard";
+import GoogleWarningCard from "../components/GoogleWarningCard";
 import useConnectors from "../hooks/Useconnectors";
 import { CONNECTOR_LIST, CONNECTOR_NAMES, ERROR_MESSAGES } from "../config/Connectors.config";
 import styles from "./Connectors.module.scss";
@@ -53,6 +54,8 @@ export default function Connectors() {
           />
         ))}
       </div>
+
+      <GoogleWarningCard />
     </div>
   );
 }
