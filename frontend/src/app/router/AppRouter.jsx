@@ -31,10 +31,16 @@ const router = createBrowserRouter([
           { path: "/login", element: <LoginPage /> },
           { path: "/signup", element: <SignupPage /> },
           { path: "/reset-password", element: <ResetPasswordPage /> },
-          { path: "/privacy", element: <PrivacyPage /> },
-          { path: "/terms", element: <TermsPage /> },
         ],
       },
+    ],
+  },
+
+  {
+    element: <AuthLayout />,
+    children: [
+      { path: "/privacy", element: <PrivacyPage /> },
+      { path: "/terms", element: <TermsPage /> },
     ],
   },
 

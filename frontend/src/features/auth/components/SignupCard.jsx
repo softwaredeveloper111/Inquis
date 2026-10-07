@@ -228,6 +228,12 @@ const SignupCard = () => {
 
           <Link to="/login">Sign in</Link>
         </div>
+
+        <div className={styles.legalLinks}>
+          <Link to="/privacy">Privacy Policy</Link>
+          <span className={styles.legalDot}>•</span>
+          <Link to="/terms">Terms of Service</Link>
+        </div>
       </section>
       {isLoading && <SpinnerLoader fullscreen overlay />}
       {showSuccessPopup && (

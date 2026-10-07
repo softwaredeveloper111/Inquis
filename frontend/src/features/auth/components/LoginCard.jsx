@@ -225,6 +225,12 @@ const LoginCard = () => {
           <span>Don't have an account?</span>
           <Link to="/signup">Sign up</Link>
         </div>
+
+        <div className={styles.legalLinks}>
+          <Link to="/privacy">Privacy Policy</Link>
+          <span className={styles.legalDot}>•</span>
+          <Link to="/terms">Terms of Service</Link>
+        </div>
       </section>
 
       {showResendModal && (
