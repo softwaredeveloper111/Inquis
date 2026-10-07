@@ -23,14 +23,40 @@
   gap: 2px;
 }
 .logoBtn {
-  display: grid;
-  place-items: center;
-  width: 32px;
+  display: flex;
+  align-items: center;
   height: 32px;
+  padding: 0 4px;
   border: 0;
   background: none;
   border-radius: var(--radius-md);
   color: var(--text-primary);
+  cursor: pointer;
+}
+
+.brandName {
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: #22e8f8;
+  text-shadow: 0 0 14px rgba(34, 232, 248, 0.45);
+  line-height: 1;
+  user-select: none;
+  transition: text-shadow var(--duration-fast);
+
+  &:hover {
+    text-shadow: 0 0 20px rgba(34, 232, 248, 0.7);
+  }
+}
+
+.brandMark {
+  display: none;
+  font-size: 22px;
+  font-weight: 800;
+  color: #22e8f8;
+  text-shadow: 0 0 14px rgba(34, 232, 248, 0.45);
+  line-height: 1;
+  user-select: none;
 }
 .iconBtn {
   display: grid;
@@ -206,8 +232,12 @@
     width: var(--sidebar-width-collapsed);
     .label,
     .chatArea,
-    .headerActions {
+    .headerActions,
+    .brandName {
       display: none;
+    }
+    .brandMark {
+      display: inline-block;
     }
     .railOnly {
       display: flex;

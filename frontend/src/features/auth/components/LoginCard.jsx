@@ -5,7 +5,7 @@ import ResetPasswordModal from "./ResetPasswordModal";
 
 import styles from "./LoginCard.module.scss";
 
-import perplexityLogo from "../../../assets/perplexity.webp";
+import inquisLogo from "../../../assets/Inquis.png";
 
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
@@ -132,12 +132,12 @@ const LoginCard = () => {
       <section className={styles.card}>
         <div className={styles.header}>
           <div className={styles.logo}>
-            <img src={perplexityLogo} alt="Perplexity" />
+            <img src={inquisLogo} alt="Inquis" />
           </div>
 
           <h1>Welcome back</h1>
 
-          <p>Sign in to continue to Perplexity</p>
+          <p>Sign in to continue to Inquis</p>
         </div>
 
         <button

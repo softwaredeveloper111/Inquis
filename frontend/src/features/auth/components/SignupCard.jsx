@@ -1,6 +1,6 @@
 import { useState , useEffect} from "react";
 import styles from "./SignupCard.module.scss";
-import perplexityLogo from "../../../assets/perplexity.webp";
+import inquisLogo from "../../../assets/Inquis.png";
 import { Link, useNavigate , useSearchParams } from "react-router-dom";
 
 import { useForm } from "react-hook-form";
@@ -121,12 +121,12 @@ const SignupCard = () => {
       <section className={styles.card}>
         <div className={styles.header}>
           <div className={styles.logo}>
-            <img src={perplexityLogo} alt="Perplexity" />
+            <img src={inquisLogo} alt="Inquis" />
           </div>
 
           <h1>Create your account</h1>
 
-          <p>Start exploring Perplexity</p>
+          <p>Start exploring Inquis</p>
         </div>
 
         <button

@@ -3,8 +3,6 @@ import { NavLink } from "react-router-dom";
 import Icons from "../Icons";
 import UserMenu from "../UserMenu/UserMenu";
 import styles from "./Sidebar.module.scss";
-import logoLight from "../../../../assets/perplexity-light.svg";
-import logoDark from "../../../../assets/perplexity-dark.svg";
 import SpinnerLoader from "../../../../components/SpinnerLoader";
 
 export default function Sidebar({
@@ -98,11 +96,8 @@ export default function Sidebar({
           onClick={collapsed ? onToggle : undefined}
           aria-label="Home"
         >
-          <img
-            src={theme === "dark" ? logoDark : logoLight}
-            alt="Perplexity"
-            style={{ height: 26 }}
-          />
+          <span className={styles.brandName}>Inquis</span>
+          <span className={styles.brandMark}>I</span>
         </button>
         <div className={styles.headerActions}>
           <button

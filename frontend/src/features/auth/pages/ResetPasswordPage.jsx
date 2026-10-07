@@ -115,12 +115,12 @@ const ResetPasswordPage = () => {
         </button>
 
         <div className={styles.header}>
-          <div className={styles.logo}>P</div>
+          <div className={styles.logo}>I</div>
 
           <h1>Reset your password</h1>
 
           <p>
-            Create a new password for your Perplexity account.
+            Create a new password for your Inquis account.
           </p>
         </div>
 
