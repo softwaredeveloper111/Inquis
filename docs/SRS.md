@@ -1,446 +1,644 @@
 # Software Requirements Specification (SRS)
-## Perplexity Clone (AI-Powered Conversational Search & Knowledge Platform)
+## Inquis: AI-Powered Autonomous Assistant & Knowledge Platform
+
+---
+
+### Document Control & Metadata
+
+| Attribute | Specification |
+|---|---|
+| **Document ID** | INQ-SRS-2026-V2.0 |
+| **System Title** | Inquis Conversational AI & Workspace Intelligence Platform |
+| **Version** | 2.0.0 (Production Release Baseline) |
+| **Document Status** | Approved / Production Baseline |
+| **Classification** | Engineering & Architectural Specification |
+| **Author / Lead Architect** | Sourav Giri |
+| **Target Runtime** | Node.js 18+ (ESM) / React 19 / MongoDB Atlas / Redis 6+ |
+| **Production Endpoints** | Frontend: `https://app.techy.fun` \| Backend API: `https://api.techy.fun` |
+
+#### Revision History
+
+| Version | Date | Author | Description of Changes |
+|---|---|---|---|
+| 1.0.0 | 2026-09-15 | Sourav Giri | Initial SRS drafting for basic conversational chat and LLM streaming. |
+| 1.5.0 | 2026-10-01 | Sourav Giri | Added BullMQ queues, file ingestion pipeline, and Cloudinary storage. |
+| 2.0.0 | 2026-10-08 | Sourav Giri | Comprehensive production refactoring: added Google Workspace Connectors (Gmail, Calendar, Drive), Human-in-the-Loop Action Confirmation Engine, Generated Files Subsystem (PDFKit/TXT), Cloudflare Workers AI image generation, multi-tier Redis rate limiters, token encryption at rest, and full API interface specifications. |
 
 ---
 
 ## 1. Introduction
 
 ### 1.1 Purpose
-This document provides the formal Software Requirements Specification (SRS) for the **Perplexity Clone** application. It describes the complete functional requirements, system architecture, data models, API endpoints, non-functional requirements, and design constraints of the project as implemented in the codebase.
+This document specifies the formal Software Requirements Specification (SRS) for **Inquis** (formerly referenced during initial research as Perplexity Clone). It articulates the functional capabilities, external system interfaces, data schemas, non-functional constraints, and architectural standards governing the application in accordance with IEEE 830 / ISO/IEC/IEEE 29148 standards.
 
-### 1.2 Scope
-The project is a full-stack conversational AI search engine inspired by Perplexity AI. It enables authenticated users to engage in intelligent, multi-turn AI conversations, execute real-time web searches, calculate mathematical expressions, perform calendar and timezone queries, generate AI images, and upload and analyze documents (PDF, TXT) and images (PNG, JPG, WEBP). Responses are delivered via real-time HTTP streaming (NDJSON) with multi-model fallback resiliency.
+### 1.2 Document Conventions
+* **RFC 2119 Compliance**: The key words **"MUST"**, **"MUST NOT"**, **"REQUIRED"**, **"SHALL"**, **"SHALL NOT"**, **"SHOULD"**, **"SHOULD NOT"**, **"RECOMMENDED"**, **"MAY"**, and **"OPTIONAL"** in this document are to be interpreted as described in BCP 14, RFC 2119.
+* **Requirements Nomenclature**: Requirements are tagged uniquely using the schema `FR-[SUBSYSTEM]-[ID]` for functional requirements and `NFR-[CATEGORY]-[ID]` for non-functional requirements.
 
-### 1.3 Definitions, Acronyms, and Abbreviations
-* **SRS**: Software Requirements Specification
-* **LLM**: Large Language Model
-* **JWT**: JSON Web Token
-* **NDJSON**: Newline Delimited JSON (`application/x-ndjson`)
-* **TTL**: Time to Live (Redis cache expiration)
-* **CSRF**: Cross-Site Request Forgery
-* **RAG / Inline**: Context-injection mechanisms for user documents and images
-* **BullMQ**: Redis-based message queue for Node.js background processing
+### 1.3 Intended Audience
+This specification is designed for:
+* **Full-Stack Engineers & AI Architects**: For implementation, code reviews, and maintenance.
+* **DevOps & Infrastructure Engineers**: For cloud deployment topology, environment configuration, and scaling policies.
+* **Security & Compliance Auditors**: For assessing encryption mechanisms, Google OAuth verification, and data isolation policies.
+* **Product Managers & QA Engineers**: For acceptance testing and verification criteria.
+
+### 1.4 Product Scope
+**Inquis** is a full-stack, enterprise-grade conversational AI assistant. It integrates multi-turn natural language dialogue with autonomous tool reasoning, real-time web search, deterministic mathematical calculation, timezone-aware datetime operations, AI image synthesis, multimodal document ingestion, dynamic document generation, and bi-directional Google Workspace integrations (Gmail, Google Calendar, Google Drive). 
+
+Crucially, Inquis enforces a strict **Human-in-the-Loop (HITL)** security model: the autonomous AI agent is strictly barred from directly executing destructive or state-changing write operations on third-party user data; instead, it generates interactive proposal cards requiring explicit client-side authorization before execution.
+
+### 1.5 Definitions, Acronyms, and Abbreviations
+* **AES-GCM**: Advanced Encryption Standard in Galois/Counter Mode.
+* **BullMQ**: High-performance Node.js message queue backed by Redis.
+* **CSRF**: Cross-Site Request Forgery.
+* **HITL**: Human-in-the-Loop.
+* **JWT**: JSON Web Token (RFC 7519).
+* **LLM**: Large Language Model.
+* **NDJSON**: Newline Delimited JSON (`application/x-ndjson`).
+* **OAuth 2.0**: Open Authorization 2.0 Protocol (RFC 6749).
+* **RBAC / ABAC**: Role-Based / Attribute-Based Access Control.
+* **TTL**: Time to Live (cache expiration interval).
 
 ---
 
 ## 2. Overall Description
 
-### 2.1 Product Perspective & High-Level Architecture
-The application is structured as a decoupled client-server architecture:
-* **Frontend**: Single Page Application (SPA) built with React 19, Vite 8, React Router v7, Redux Toolkit, Tailwind CSS v4, and SCSS modules.
-* **Backend**: Express 5 application on Node.js (ES Modules), with Socket.IO integration, MongoDB (via Mongoose 9) as the primary datastore, and Redis (via ioredis 6) for caching, rate limiting, and BullMQ queue management.
-* **Workers**: Dedicated BullMQ worker processes for asynchronous email delivery (`email` queue) and file extraction/ingestion (`file-ingest` queue).
-* **Third-Party Services**:
-  * Cloudinary: Cloud asset storage (images and uploaded documents).
-  * Cloudflare AI: FLUX-1-Schnell image generation model.
-  * Resend: Transactional email delivery service.
-  * Tavily: Search engine API for real-time web grounding.
-  * Google OAuth 2.0: Third-party authentication provider.
-  * AI Providers (LangChain): Google GenAI (Gemini), Groq, Mistral AI, OpenRouter, Cohere.
+### 2.1 Product Perspective & System Context
+Inquis operates as a modern cloud-native, decoupled distributed architecture. The system consists of four primary tiers:
+1. **Presentation Tier (SPA)**: React 19 single-page application hosted on Vercel (`app.techy.fun`).
+2. **Application & Orchestration Tier**: Express 5 REST API and Socket.IO server hosted on Render (`api.techy.fun`).
+3. **Asynchronous Background Processing Tier**: BullMQ worker processes executing in background threads/containers for email transmission and asynchronous file extraction.
+4. **Data & Storage Tier**: Managed MongoDB Atlas for persistent entities, Redis for high-throughput distributed caching, rate limiting, and queues, and Cloudinary for media asset persistence.
 
 ```
-+------------------------------------------------------------------------+
-|                              Frontend                                  |
-|         React 19 + Redux Toolkit + React Router v7 + Vite              |
-+------------------------------------+-----------------------------------+
-                                     |  HTTP (REST & NDJSON) / WebSocket
-+------------------------------------v-----------------------------------+
-|                              Backend                                   |
-|   Express 5 API Server + Socket.IO Server (HTTP server on PORT)        |
-|   Middlewares: Helmet, MongoSanitize, CORS, CookieParser, RateLimiters|
-+---------+--------------------+---------------------+-------------------+
-          |                    |                     |
-+---------v--------+   +-------v-----------+   +-----v-------------------+
-|    MongoDB       |   |      Redis        |   |    AI & External APIs   |
-| User, Chat,      |   | Caching, Blacklist|   | LangChain Multi-Model   |
-| Message, File    |   | Rate Limits,      |   | Tavily (Web Search)     |
-| Models           |   | BullMQ Queues     |   | Cloudflare (FLUX Image) |
-+------------------+   +-------+-----------+   | Cloudinary (Storage)    |
-                               |               | Resend (Email Service)  |
-                       +-------v-----------+   | Google OAuth 2.0        |
-                       |  BullMQ Workers   |   +-------------------------+
-                       | - Email Worker    |
-                       | - File Ingest     |
-                       +-------------------+
++-----------------------------------------------------------------------------------------+
+|                                    Client Tier (SPA)                                     |
+|                       React 19 + Redux Toolkit + React Router v7                         |
+|                             Hosted on Vercel [app.techy.fun]                            |
++--------------------------------------------+--------------------------------------------+
+                                             | HTTPS (REST & NDJSON) / WSS (Socket.IO)
++--------------------------------------------v--------------------------------------------+
+|                                 Application Server Tier                                 |
+|                       Node.js (ESM) + Express 5.2.1 + Socket.IO                         |
+|                             Hosted on Render [api.techy.fun]                            |
+|                                                                                         |
+|  [Security Middlewares]          [Agent & Tools Engine]        [Workspace Connectors]   |
+|  • Helmet, MongoSanitize         • LangChain Agent Loop        • Google API Client      |
+|  • CSRF & Cookie Parser          • Tavily Web Search           • OAuth Token Manager    |
+|  • Redis Distributed Limits      • Cloudflare Flux Gen         • HITL Action Executor   |
+|  • JWT / Session Auth            • Math.js & Date-Time         • AES Encryption Layer   |
++---------+----------------------------------+------------------------------------+-------+
+          |                                  |                                    |
++---------v----------+             +---------v----------+               +---------v-------+
+|  MongoDB Atlas     |             |  Redis Cache/Queue |               | External APIs   |
+|  • users           |             |  • Token Blacklist |               | • Gemini        |
+|  • chats           |             |  • Rate Limit Keys |               | • Groq          |
+|  • messages        |             |  • AI Cooldowns    |               | • Mistral       |
+|  • files           |             |  • Action Buffers  |               | • OpenRouter    |
+|  • connectoraccts  |             |  • BullMQ Streams  |               | • Cohere        |
+|  • generatedfiles  |             +---------+----------+               | • Cloudflare AI |
++--------------------+                       |                          | • Tavily Search |
+                                   +---------v----------+               | • Resend Email  |
+                                   |  BullMQ Workers    |               | • Cloudinary    |
+                                   |  • email.worker    |               | • Google APIs   |
+                                   |  • file.worker     |               +-----------------+
+                                   +--------------------+
 ```
 
 ### 2.2 Technology Stack
-* **Runtime**: Node.js (ES Modules)
-* **Backend Framework**: Express 5.2.1
-* **Database**: MongoDB with Mongoose 9.10.0
-* **In-Memory Store & Cache**: Redis via ioredis 6.0.0
-* **Job Queue & Workers**: BullMQ 6.3.8
-* **Authentication**: JWT (`jsonwebtoken` 9.0.3), `bcryptjs` 3.0.3, `google-auth-library` 11.1.0
-* **AI & Orchestration**:
-  * `langchain` 1.5.14 & `@langchain/core` 1.2.13
-  * `@langchain/google-genai` (gemini-3.5-flash-lite)
-  * `@langchain/groq` (openai/gpt-oss-120b)
-  * `@langchain/mistralai` (ministral-3b-2512)
-  * `@langchain/openrouter` (nvidia/nemotron-3.5-lightning:free)
-  * `@langchain/cohere` (command-r7b-12-2024)
-* **Tools & Utilities**:
-  * `@tavily/core` 0.7.13 (Web Search)
-  * `mathjs` 15.2.0 (Math Calculator)
-  * `date-fns` 4.4.0 & `date-fns-tz` 3.2.0 (Date/Time operations)
-  * `unpdf` 1.8.1 (PDF text extraction)
-  * `file-type` 22.1.1 (Magic byte MIME detection)
-  * `cloudinary` 2.11.0 (File & Image Cloud Storage)
-  * `resend` 6.28.1 & `nodemailer` 10.0.10 (Email delivery)
-  * `pino` 10.3.1 (Logging)
-* **Security & Validation**: `helmet` 8.3.0, `@exortek/express-mongo-sanitize` 3.0.1, `express-validator` 7.3.2, `express-rate-limit` 8.7.0, `rate-limit-redis` 6.0.1, `zod` 4.6.5
-* **Frontend**: React 19.2.6, Vite 8.0.12, React Router DOM 7.18.4, Redux Toolkit 2.12.0, Axios 1.20.0, Socket.IO Client 4.8.4, Sonner 2.0.8, Lucide React 1.48.0, React-Markdown 10.1.0, KaTeX & Rehype/Remark plugins, Tailwind CSS 4.3.3, SASS 1.104.1.
+
+#### 2.2.1 Frontend Architecture
+* **Core Framework**: React 19.2.6 with Vite 8.0.12 (ES Modules, HMR).
+* **State Management**: Redux Toolkit 2.12.0 and React-Redux 9.3.0.
+* **Routing**: React Router DOM 7.18.4 (Nested data routes, layouts, protected guards).
+* **Styling Engine**: Tailwind CSS 4.3.3 (`@tailwindcss/vite`), Sass 1.104.1 (Modular SCSS), Lucide React 1.52.0 icons.
+* **Markdown & Formula Rendering**: React-Markdown 10.1.0, Remark-GFM 4.0.1, Remark-Math 6.0.0, Rehype-Katex 7.0.1 (KaTeX 0.18.10), Rehype-Highlight 7.0.2 (Highlight.js 11.12.0).
+* **Real-Time Client**: Socket.IO Client 4.8.4.
+* **Feedback & Forms**: Sonner 2.0.8 (Toasts), React Hook Form 7.88.0, Zod 4.6.5, `@hookform/resolvers` 5.9.1.
+
+#### 2.2.2 Backend Architecture
+* **Runtime**: Node.js 18+ LTS with native ECMAScript Modules (`"type": "module"`).
+* **Web Framework**: Express 5.2.1 with native Promise error handling.
+* **Real-Time Gateway**: Socket.IO 4.8.4 mounted on Node HTTP Server.
+* **Database Driver**: Mongoose 9.10.0 (MongoDB Atlas).
+* **Cache & In-Memory Store**: ioredis 6.0.0 (Standalone & Redis Cloud/Upstash).
+* **Queue Engine**: BullMQ 6.3.8 (Redis Streams backing).
+* **Logging Engine**: Pino 10.3.1, Pino-HTTP 11.0.0, Morgan 1.12.1.
+
+#### 2.2.3 AI & Agent Infrastructure
+* **Orchestration**: `langchain` 1.5.14, `@langchain/core` 1.2.13.
+* **Model Providers**:
+  * Google GenAI: `@langchain/google-genai` 2.3.2 (`gemini-3.5-flash-lite`).
+  * Groq Cloud: `@langchain/groq` 1.3.1 (`openai/gpt-oss-120b`).
+  * Mistral AI: `@langchain/mistralai` 1.2.0 (`ministral-3b-2512`).
+  * OpenRouter: `@langchain/openrouter` 0.4.15 (`nvidia/nemotron-3.5-lightning:free`).
+  * Cohere: `@langchain/cohere` 1.1.0 (`command-r7b-12-2024`).
+* **Image Synthesis**: Cloudflare Workers AI (`@cf/black-forest-labs/flux-1-schnell`).
+* **Web Grounding**: Tavily Core SDK `@tavily/core` 0.7.13.
+* **Deterministic Computation**: `mathjs` 15.2.0, `date-fns` 4.4.0, `date-fns-tz` 3.2.0.
+* **Document Synthesis & Parsing**: PDFKit 0.20.2, `unpdf` 1.8.1, `file-type` 22.1.1.
 
 ---
 
 ## 3. System Features & Functional Requirements
 
-### 3.1 Authentication & Authorization
-* **FR-AUTH-01: User Registration**:
-  * Users can register with `username`, `email`, and `password`.
-  * `username` constraints: 3-30 chars, lowercase, alphanumeric and underscores only (`^[a-z0-9_]{3,30}$`).
-  * `email` constraints: valid email format, unique, lowercase, trimmed.
-  * `password` constraints: 8-72 chars, must contain at least 1 uppercase letter, 1 lowercase letter, 1 digit, and 1 special character (`@$!%*?&`).
-  * Passwords must be hashed using `bcryptjs` with configured salt rounds before storage.
-  * Account created with `verified: false`.
-  * Email verification token (JWT, 5-minute expiry) is generated, hashed with SHA-256, stored in Redis under `email-verification:<userId>` with 300s TTL, and queued to BullMQ `email` queue.
-* **FR-AUTH-02: Email Verification**:
-  * Verification link accessed via `GET /api/auth/verify-email?token=<token>`.
-  * Validates JWT token and checks token SHA-256 hash against Redis.
-  * On success, marks user as `verified: true`, deletes token from Redis, and returns an HTML confirmation response.
-  * Handles expired tokens (HTTP 410 HTML response) and invalid/already verified tokens.
-* **FR-AUTH-03: Resend Verification Email**:
-  * Endpoint `POST /api/auth/resend-verify-email`.
-  * Validates email, ensures user exists and is not yet verified.
-  * Generates new token, stores in Redis, and enqueues verification email job.
-* **FR-AUTH-04: User Login**:
-  * Endpoint `POST /api/auth/login`.
-  * Verifies email and password using `bcrypt.compare`.
-  * Blocks login if account is unverified (`verified === false`).
-  * Generates session JWT (1-day expiry) containing `id: user._id`.
-  * Sets HTTP-only cookie `token` (path `/`, maxAge 1 day, secure in production, sameSite `strict` in dev / `none` in prod).
-* **FR-AUTH-05: Google OAuth 2.0 Authentication**:
-  * `GET /api/auth/google`: Initiates Google OAuth consent flow with state parameter stored in `g_oauth_state` cookie (`lax` sameSite, 10 min TTL). Supports `mode=signup` or `mode=login`.
-  * `GET /api/auth/google/callback`: Verifies state cookie, exchanges auth code for tokens, verifies Google ID token. Finds or automatically creates user (if `signup` mode, with randomized secure password and auto-verification), sets session cookie `token`, and redirects to frontend.
-* **FR-AUTH-06: Forgot & Reset Password**:
-  * `POST /api/auth/forgot-password`: Generates reset token (JWT, 5-minute expiry), hashes with SHA-256, stores in Redis (`password-reset:user:<userId>`, 300s TTL), queues reset email with frontend reset URL.
-  * `POST /api/auth/reset-password`: Verifies token against JWT secret and Redis hash, validates new password complexity, updates password, and deletes Redis token.
-* **FR-AUTH-07: User Profile (`/me`)**:
-  * Protected endpoint `GET /api/auth/me`. Returns authenticated user information.
-  * User object cached in Redis under `user:<userId>` with 300s TTL.
-* **FR-AUTH-08: Logout & Token Blacklisting**:
-  * `POST /api/auth/logout`: Reads JWT from cookie, computes SHA-256 hash, stores in Redis under `blacklist:token:<tokenHash>` with remaining token TTL.
-  * Evicts user cache `user:<userId>` and clears `token` cookie.
+### 3.1 Authentication & Identity Subsystem
 
-### 3.2 Conversational AI Chat & Tool Engine
-* **FR-CHAT-01: Message Generation & Real-time Streaming**:
-  * Endpoint `POST /api/chats/message`.
-  * Accepts `message` (string), optional `chatId` (string), and optional `fileIds` (array of file IDs).
-  * Validates and loads chat history (last 20 messages sorted chronologically).
-  * Streams response using NDJSON (`application/x-ndjson`), flushing headers upon first token.
-  * Stream emits JSON events:
-    * `{"type": "token", "text": "..."}`: Chunk of generated text.
-    * `{"type": "status", "status": "image"}`: Tool invocation status update.
-    * `{"type": "done", "chat": "<chatId>", "title": "<title>"}`: Stream completion.
-    * `{"type": "error", "message": "..."}`: Error notification.
-  * Client disconnect detection via `req.on("close")` with `AbortController` signal to terminate AI computation and conserve tokens.
-* **FR-CHAT-02: Multi-Model Routing & Resiliency Chain**:
-  * Prioritized provider fallback chain:
-    1. **Gemini** (`gemini-3.5-flash-lite`): Supports tools & vision, 12s timeout, 100k context tokens.
-    2. **Groq** (`openai/gpt-oss-120b`): Supports tools, 12s timeout, 6k context tokens.
-    3. **Mistral** (`ministral-3b-2512`): Supports tools, 12s timeout, 30k context tokens.
-    4. **OpenRouter** (`nvidia/nemotron-3.5-lightning:free`): Supports tools, 15s timeout, 30k context tokens.
-    5. **Cohere** (`command-r7b-12-2024`): Supports tools, 12s timeout, 30k context tokens.
-  * Dynamic filtering: filters providers based on capabilities (`supportsTools`, `supportsVision`).
-  * Context trimming: dynamically trims messages to stay within provider token budget using `trimToBudget`.
-  * Cooldown tracking in Redis:
-    * HTTP 429 Rate Limit: Cooldown 60s (or provider `retry-after`).
-    * Auth failure (401/403): Cooldown 600s.
-    * 3 consecutive server/unavailable failures: Cooldown 30s.
-  * If all candidate providers are cooling down, the router attempts the pool anyway.
-  * Mid-stream failure guard: Once first token is emitted, fallback is aborted to prevent partial duplicate output; emits `StreamInterruptedError`.
-* **FR-CHAT-03: LangChain Autonomous Agent & Tools**:
-  * When `useAgent` is active, invokes `createAgent` with tools and `recursionLimit: 11` (approx. 5 tool steps):
-    1. **Web Search Tool (`webSearchTool`)**: Queries Tavily API (`maxResults: 3`, `searchDepth: "basic"`). Returns title, URL, and snippet content for real-time web grounding.
-    2. **Calculator Tool (`calculatorTool`)**: Executes mathematical expressions safely via `mathjs` `evaluate()`.
-    3. **DateTime Tool (`dateTimeTool`)**: Performs operations (`current_time`, `day_of_week`, `date_difference`, `add_days`, `timezone`) using `date-fns` and `date-fns-tz` (default timezone: `Asia/Kolkata`).
-    4. **Image Generation Tool (`imageTool`)**: Calls Cloudflare AI endpoint (`@cf/black-forest-labs/flux-1-schnell`), receives base64 JPEG, uploads to Cloudinary folder `perplexity/images`, and returns exact markdown URL.
-* **FR-CHAT-04: Chat Title Generation**:
-  * For new chats, automatically generates a 2 to 4-word title in parallel with the first message.
-  * Uses dedicated `titleModel` (`ministral-3b-2512` via Mistral AI, temperature: 0.2, maxTokens: 25).
-  * Sanitizes output (strips numbers, bullets, quotes, special characters).
-  * Fallback to first 4 words of user query if AI generation fails or exceeds 5-second total timeout.
-* **FR-CHAT-05: Chat History Persistence**:
-  * Saves user query and AI response into MongoDB `messages` collection only after stream completes successfully.
-  * If a newly created chat fails before saving messages, orphan chat cleanup runs to remove the empty chat.
+#### FR-AUTH-01: User Registration & Credential Hashing
+* The system **SHALL** accept user registration requests containing `username`, `email`, and `password`.
+* **Validation Rules**:
+  * `username`: Length between 3 and 30 characters, alphanumeric and underscore characters only (`^[a-z0-9_]{3,30}$`).
+  * `email`: Standard RFC 5322 email syntax, normalized to lowercase, trimmed, and strictly unique.
+  * `password`: Length between 8 and 72 characters, requiring at least one uppercase letter, one lowercase letter, one numeric digit, and one special symbol (`[@$!%*?&]`).
+* The system **SHALL** hash the password using `bcryptjs` parameterized with the configured salt rounds (`BCRYPT_GEN_SALT`) before persisting.
+* Newly registered accounts **SHALL** initialize with `verified: false`.
+* The system **SHALL** generate an email verification JWT (valid for 300 seconds), compute its SHA-256 digest, persist the digest in Redis (`email-verification:<userId>`, TTL 300s), and dispatch an asynchronous email job via BullMQ.
 
-### 3.3 Chat Management
-* **FR-CHAT-06: List Chats**:
-  * `GET /api/chats`: Cursor-based pagination (`cursor` = `updatedAt` of last unpinned chat, `limit` max 50, default 20).
-  * Returns pinned chats first (in initial page) followed by unpinned chats sorted by `updatedAt` descending.
-* **FR-CHAT-07: Get Chat Messages**:
-  * `GET /api/chats/messages/:chatId`: Cursor-based pagination (`cursor` = `_id` of oldest message).
-  * Validates chat ownership (403 if unauthorized).
-  * Populates message attachments (name, MIME, URL).
-* **FR-CHAT-08: Pin / Unpin Chat**:
-  * `PATCH /api/chats/pinned/:chatId`: Toggles `isPinned` boolean flag.
-* **FR-CHAT-09: Rename Chat**:
-  * `PATCH /api/chats/rename/:chatId`: Updates chat `title` (validated: max 60 chars).
-* **FR-CHAT-10: Delete Chat**:
-  * `DELETE /api/chats/delete/:chatId`: Deletes chat record, all associated messages, and associated files from MongoDB.
-  * Triggers asynchronous background deletion of file assets from Cloudinary storage (`deleteFromStorage`).
+#### FR-AUTH-02: Cryptographic Email Verification
+* Verification **SHALL** be processed via `GET /api/auth/verify-email?token=<token>`.
+* The system **SHALL** verify token signature against `EMAIL_VERIFICATION_JWT_SECRET_KEY` and compare its SHA-256 digest with the stored Redis hash.
+* Upon validation, the user record **SHALL** transition to `verified: true`, the Redis key **SHALL** be purged, and an HTML status response rendered.
 
-### 3.4 File Attachment & Ingestion Pipeline
-* **FR-FILE-01: File Upload & Validation**:
-  * `POST /api/files`: Accepts single file in `multipart/form-data` with field key `file`.
-  * Max file size limit: 5 MB (`5 * 1024 * 1024` bytes).
-  * Allowed MIME types:
-    * `image/png` (Cloudinary resource: `image`)
-    * `image/jpeg` (Cloudinary resource: `image`)
-    * `image/webp` (Cloudinary resource: `image`)
-    * `application/pdf` (Cloudinary resource: `raw`)
-    * `text/plain` (Cloudinary resource: `raw`)
-  * Two-layer validation: Multer MIME filter + byte inspection using `fileTypeFromBuffer` (and null-byte checks for text files).
-  * Memory storage buffer uploaded directly to Cloudinary (`uploadBuffer`).
-  * Creates `File` record in MongoDB with `status: "processing"`.
-  * Images marked immediately as `status: "ready"`, `mode: "image"`.
-  * PDF and text documents queued to BullMQ `file-ingest` queue for text extraction.
-* **FR-FILE-02: Asynchronous File Ingestion Worker**:
-  * BullMQ worker on queue `file-ingest` (concurrency: 2).
-  * Downloads document from Cloudinary URL with 30s timeout.
-  * For PDF: extracts full text using `unpdf` (`extractText` with `mergePages: true`).
-  * For TXT: reads UTF-8 text.
-  * Validation: Rejects files with no readable text (scanned PDFs without OCR) or text exceeding 60,000 characters (~15,000 tokens).
-  * On success: Updates file record with `status: "ready"`, `mode: "inline"`, and stores `extractedText`.
-  * On failure: Updates file record with `status: "failed"` and sets `failReason`.
-* **FR-FILE-03: File Status Polling**:
-  * `GET /api/files/:fileId`: Checks file status (`processing`, `ready`, `failed`), returning mode and failure reason if applicable.
-* **FR-FILE-04: Chat Context Injection**:
-  * When sending a message with `fileIds`:
-    * Up to 4 documents (`MAX_DOCS = 4`) injected into system prompt as `<document index="i" name="...">content</document>`.
-    * Up to 4 images (`MAX_IMAGES = 4`) fetched, converted to base64 Data URLs, and attached to the user message block for vision-capable models (Gemini).
+#### FR-AUTH-03: Session Management & HTTP-Only Cookie Issuance
+* Upon successful password verification via `bcrypt.compare`, the system **SHALL** verify that `verified === true`.
+* The system **SHALL** generate a session JWT signed with `JWT_SECRET_KEY` (1-day expiration) containing payload `{ id: user._id }`.
+* The session token **SHALL** be transmitted exclusively via an HTTP-only cookie (`token`):
+  * `httpOnly: true`, `path: "/"`, `maxAge: 86400000` (24 hours).
+  * `secure: true` in production environments.
+  * `sameSite: "none"` in production (cross-domain client/API architecture) and `sameSite: "strict"` in development.
 
-### 3.5 Real-Time Communication
-* **FR-SOCK-01: WebSocket Connection**:
-  * Socket.IO server mounted on HTTP server, configured with CORS for `FRONTEND_URL` and credentials support.
-  * Logs connection events (`io.on("connection")`).
+#### FR-AUTH-04: Google OAuth 2.0 Single Sign-On
+* The system **SHALL** provide federated authentication via Google OAuth 2.0 (`googleAuth.route.js`).
+* Initiating `GET /api/auth/google?mode=signup|login` **SHALL** generate a cryptographically random `state` nonce stored in an HTTP cookie (`g_oauth_state`, TTL 600s, `sameSite: "lax"`).
+* The callback `GET /api/auth/google/callback` **SHALL** validate the state nonce, exchange authorization code for tokens, retrieve Google profile information, upsert user record with randomized secure password credentials, auto-mark `verified: true`, set the session cookie, and redirect to the frontend.
 
-### 3.6 Frontend User Interface
-* **FR-UI-01: Authentication Flows**:
-  * Login page (`/login`) with email/password and "Continue with Google" button.
-  * Signup page (`/signup`) with input validation, password criteria indicators, and Google OAuth option.
-  * Password reset flow (`/reset-password?token=...`).
-* **FR-UI-02: Dashboard & Conversation View**:
-  * Main conversation workspace with top navigation bar, collapsible sidebar, and bottom chat input area.
-  * Chat input supports multiline typing, file drag-and-drop / file picker attachment (PDF, TXT, images), and Incognito mode toggle.
-  * Real-time stream rendering of assistant answers using Markdown (`react-markdown`), mathematical formulas (`rehype-katex`, `remark-math`), and syntax highlighted code blocks (`rehype-highlight`, `highlight.js`).
-  * Visual status indicators when agent executes tools (e.g., image generation in progress).
-* **FR-UI-03: Sidebar & History Management**:
-  * Categorized list of conversations (Pinned vs. Recent).
-  * Inline options to pin, unpin, rename, and delete conversations.
-  * Search modal (`SearchModal`) to filter conversations.
-  * Upgrade modal (`UpgradeModal`) and Connectors page (`/connectors`).
+#### FR-AUTH-05: Password Reset Lifecycle
+* The system **SHALL** support a two-step password reset flow (`/forgot-password` and `/reset-password`).
+* Reset tokens **SHALL** be signed with `RESET_PASSWORD_JWT_SECRET_KEY` (300-second TTL), hashed with SHA-256, and stored in Redis under `password-reset:user:<userId>`.
+* Successful reset **SHALL** update the password hash and invalidate the Redis token immediately.
+
+#### FR-AUTH-06: Session Invalidation & Token Blacklisting
+* Upon `POST /api/auth/logout`, the system **SHALL** calculate the SHA-256 digest of the current session JWT and persist it in Redis under `blacklist:token:<tokenHash>` with a TTL equal to the token's remaining validity.
+* The system **SHALL** purge the cached user profile (`user:<userId>`) and clear the client cookie.
+
+---
+
+### 3.2 Conversational AI & Autonomous Agent Subsystem
+
+#### FR-CHAT-01: Real-Time Stream Response Generation
+* The system **SHALL** provide an NDJSON streaming endpoint: `POST /api/chats/message`.
+* Requests **SHALL** accept `{ message: string, chatId?: string, fileIds?: string[] }`.
+* The server **SHALL** initialize response headers (`Content-Type: application/x-ndjson; charset=utf-8`, `Transfer-Encoding: chunked`) and invoke `res.flushHeaders()` prior to streaming token chunks.
+* The stream **SHALL** emit typed JSON lines:
+  * `{"type": "token", "text": "..."}`: Text fragment from the model.
+  * `{"type": "status", "status": "image"}`: Tool lifecycle transition events.
+  * `{"type": "connector_action", "action": {...}}`: Human-in-the-loop proposal events.
+  * `{"type": "done", "chat": "<id>", "title": "<title>"}`: Stream completion metadata.
+  * `{"type": "error", "message": "..."}`: Stream error notifications.
+* The system **SHALL** bind an `AbortController` to the request's `close` event (`req.on("close")`), immediately terminating downstream AI API streams upon client disconnect to eliminate unmetered token consumption.
+
+#### FR-CHAT-02: Multi-Model Resiliency Cascade & Circuit Breaker
+* The AI engine **SHALL** implement an automated multi-provider fallback cascade:
+  1. **Primary**: Google Gemini (`gemini-3.5-flash-lite`) — 12s timeout, 100,000 context tokens.
+  2. **Secondary**: Groq Cloud (`openai/gpt-oss-120b`) — 12s timeout, 6,000 context tokens.
+  3. **Tertiary**: Mistral AI (`ministral-3b-2512`) — 12s timeout, 30,000 context tokens.
+  4. **Quaternary**: OpenRouter (`nvidia/nemotron-3.5-lightning:free`) — 15s timeout, 30,000 context tokens.
+  5. **Quinary**: Cohere (`command-r7b-12-2024`) — 12s timeout, 30,000 context tokens.
+* **Cooldown Policies**:
+  * Upon HTTP 429 (Rate Limit): Provider enters cooldown for 60 seconds (or standard `retry-after` header value).
+  * Upon HTTP 401/403 (Auth failure): Provider enters cooldown for 600 seconds.
+  * Upon 3 consecutive HTTP 503 / network timeout failures: Provider enters cooldown for 30 seconds.
+* **Mid-Stream Circuit Breaker**: Once the first token chunk has been flushed to the client, provider fallback **SHALL** be permanently inhibited to prevent concatenated, corrupted responses; the stream emits `StreamInterruptedError`.
+
+#### FR-CHAT-03: Autonomous Agent Tool Execution Loop
+* When tool execution is required, the system **SHALL** execute a LangChain agent loop (`createAgent`) bound with `recursionLimit: 11` (allowing up to ~5 sequential reasoning steps).
+* **Registered Core Tools**:
+  1. `webSearchTool`: Queries Tavily API for live internet content, returning sources, dates, and snippets.
+  2. `calculatorTool`: Evaluates mathematical expressions using deterministic `mathjs`.
+  3. `dateTimeTool`: Computes time differences, date offsets, and timezone conversions via `date-fns-tz`.
+  4. `imageTool`: Generates images via Cloudflare Workers AI FLUX model, uploads raw buffer to Cloudinary (`perplexity/images`), and returns the persistent markdown link.
+  5. `createTextFile` & `createPdfFile`: Synthesizes user-requested text or PDF files.
+  6. Workspace Connector Tools: Gmail, Calendar, and Drive integration tools.
+
+#### FR-CHAT-04: Automated Chat Title Generation
+* Upon the initial user prompt in a new chat, the system **SHALL** asynchronously generate a concise 2–4 word title using a lightweight model (`ministral-3b-2512`, `temperature: 0.2`, `maxTokens: 25`).
+* If title generation exceeds 5,000ms or fails, the system **SHALL** fallback to truncating the first 4 words of the user query.
+
+---
+
+### 3.3 Google Workspace Connectors & Human-in-the-Loop (HITL) Subsystem
+
+#### FR-CONN-01: Separate Workspace Service Authorization
+* Inquis **SHALL** provide dedicated connector authorization routes under `/api/connectors`:
+  * `POST /api/connectors/google/:service/start` (where `:service` is `gmail`, `calendar`, or `drive`).
+* Generating the authorization URL **SHALL** request restricted Google OAuth scopes:
+  * Gmail: `https://www.googleapis.com/auth/gmail.modify`
+  * Calendar: `https://www.googleapis.com/auth/calendar.events`
+  * Drive: `https://www.googleapis.com/auth/drive.file`
+* The callback `GET /api/connectors/google/callback` **SHALL** authenticate using state verification cached in Redis, exchange the code for access/refresh tokens, and securely persist the connection.
+
+#### FR-CONN-02: Cryptographic Token Storage at Rest
+* Connector refresh tokens **SHALL NOT** be stored in plaintext.
+* The system **SHALL** encrypt all refresh tokens using AES-256 with a dedicated master secret (`CONNECTOR_ENCRYPTION_KEY`) before saving to the `connectoraccounts` collection in MongoDB.
+* The field `refreshTokenEnc` **SHALL** be configured with `select: false` on the Mongoose schema.
+
+#### FR-CONN-03: Read Tool Capabilities
+* When active, connector read tools **SHALL** expose user data to the LLM context ephemerally:
+  * `gmailSearch`: Queries user emails with Gmail syntax (`from:`, `is:unread`, `newer_than:`).
+  * `gmailReadThread`: Fetches full email threads with HTML tag sanitization and MIME decoding.
+  * `calendarListEvents`: Queries primary calendar events across ISO date intervals.
+  * `driveSearchFiles`: Searches Google Drive files and folders.
+  * `driveReadFile`: Extracts plain text from Google Drive documents.
+
+#### FR-CONN-04: Human-in-the-Loop Two-Phase Write Protocol
+* The AI Agent **SHALL NOT** directly execute write operations on Google APIs.
+* When the agent decides to invoke a write action (`gmail.send`, `calendar.create`, `calendar.update`, `calendar.delete`, `drive.create_folder`, `drive.create_doc`, `drive.rename`, `drive.move`, `drive.trash`), it **SHALL** invoke `prepareAction()`:
+  1. The action parameters and preview summary are serialized and cached in Redis under `connector:action:<id>` with an absolute TTL of 900 seconds (15 minutes).
+  2. A cryptographic SHA-256 hash of `[userId, type, params]` is stored in `connector:action:dedupe:<hash>` (TTL 120s) to prevent duplicate card creation during provider retries.
+  3. The stream emits an event `{"type": "connector_action", "action": { id, service, type, ...preview }}`.
+  4. The model receives a status notification that the proposal is pending user confirmation.
+
+#### FR-CONN-05: Atomic Action Confirmation & Execution
+* The frontend **SHALL** render an interactive Action Card allowing the user to inspect parameters and click **Confirm** or **Cancel**.
+* `POST /api/connectors/actions/:id/confirm`:
+  * Atomically executes `redis.del("connector:action:<id>")`. If return count !== 1, request is rejected with HTTP 410 (prevents double-execution / replay attacks).
+  * Executes the corresponding action runner in `actions.executors.js` using a freshly refreshed Google access token.
+  * Returns success summary string to the UI.
+* `POST /api/connectors/actions/:id/cancel`:
+  * Atomically deletes the action key and dedupe key from Redis.
+
+#### FR-CONN-06: Connector Revocation & Data Purge
+* `DELETE /api/connectors/:service`:
+  * Deletes the `ConnectorAccount` record from MongoDB.
+  * Purges any associated connector context from active memory.
+
+---
+
+### 3.4 Generated Files Subsystem
+
+#### FR-GEN-01: Server-Side PDF Document Generation
+* When invoked via `createPdfFile`, the system **SHALL** utilize `pdfkit` to compile structured text into a formal PDF binary buffer.
+* The content **SHALL** be validated (maximum 60,000 characters per document) and sanitized for non-printable characters.
+* The binary buffer **SHALL** be stored in MongoDB under `generatedfiles` with an unguessable 32-character hexadecimal token.
+
+#### FR-GEN-02: Plain Text File Generation
+* When invoked via `createTextFile`, the system **SHALL** validate text content (maximum 200,000 characters), clean whitespace, and store UTF-8 text buffer under `generatedfiles`.
+
+#### FR-GEN-03: Secure File Download Pipeline
+* Generated files **SHALL** be publicly downloadable via `GET /api/generated-files/:token`.
+* The endpoint **SHALL** set appropriate headers:
+  * `Content-Type`: `application/pdf` or `text/plain; charset=utf-8`.
+  * `Content-Disposition`: `attachment; filename="<filename>"`.
+* Generated files **SHALL** configure a 30-day MongoDB TTL index on `createdAt` for automated archival and purge.
+
+---
+
+### 3.5 File Attachment & Ingestion Subsystem
+
+#### FR-FILE-01: File Upload & MIME Magic-Byte Validation
+* `POST /api/files` **SHALL** accept multipart uploads with a strict 5 MB file size limit.
+* Permitted formats: PNG, JPG, WEBP, PDF, TXT.
+* **Validation**: The server **SHALL** inspect raw buffer bytes using `fileTypeFromBuffer` to verify that actual file signatures match declared MIME types, rejecting spoofed uploads with HTTP 400. Text files are checked for null-byte absence.
+
+#### FR-FILE-02: Asynchronous BullMQ Document Ingestion
+* Upon upload of PDF or TXT files, the file record is created in MongoDB with `status: "processing"` and enqueued to BullMQ `file-ingest` queue.
+* The worker extracts text using `unpdf` (`mergePages: true`). If text exceeds 60,000 characters, it is truncated; if no text is found (scanned PDF), the job marks `status: "failed"` with `failReason: "No readable text found"`.
+* Upon success, the record updates to `status: "ready"`, `mode: "inline"` with `extractedText` saved.
+
+#### FR-FILE-03: Multimodal Context Injection
+* When messages are submitted with file attachments:
+  * Up to 4 document texts (`MAX_DOCS = 4`) are injected into the agent system prompt within `<document index="i" name="...">` tags.
+  * Up to 4 images (`MAX_IMAGES = 4`) are converted to base64 Data URLs and injected into the user message block for vision-capable models (Gemini).
 
 ---
 
 ## 4. External Interfaces
 
-### 4.1 Frontend Routing
-| Route | Access | Component | Purpose |
-|---|---|---|---|
-| `/login` | Public | `LoginPage` | User login & Google OAuth entry |
-| `/signup` | Public | `SignupPage` | User registration & Google OAuth entry |
-| `/reset-password` | Public | `ResetPasswordPage` | Reset password via token from email |
-| `/` | Protected | `Dashboard` | Main AI chat and conversation view |
-| `/dashboard` | Protected | Redirect | Redirects to `/` |
-| `/connectors` | Protected | `Connectors` | Connectors management page |
-| `*` | Any | `NotFound` | 404 page |
+### 4.1 Frontend Route Architecture
+
+| Route Path | Access Level | Layout | Primary Component | Functional Description |
+|---|---|---|---|---|
+| `/login` | Public | `AuthLayout` | `LoginPage` | User login with email/password and Google SSO button |
+| `/signup` | Public | `AuthLayout` | `SignupPage` | Account registration with password criteria validation |
+| `/reset-password` | Public | `AuthLayout` | `ResetPasswordPage`| Password reset entry via email token |
+| `/privacy` | Public | `AuthLayout` | `PrivacyPage` | Corporate Privacy Policy & Google data disclosure |
+| `/terms` | Public | `AuthLayout` | `TermsPage` | Terms of Service & acceptable use policies |
+| `/` | Protected | `AppLayout` | `Dashboard` | Primary conversational AI workspace and streaming chat |
+| `/dashboard` | Protected | `AppLayout` | Redirect (`/`) | Canonical dashboard redirect |
+| `/connectors` | Protected | `AppLayout` | `Connectors` | Management of Gmail, Calendar, Drive connectors |
+| `*` | Any | None | `NotFound` | 404 Not Found error view |
+
+---
 
 ### 4.2 Backend API Specifications
 
-#### Authentication (`/api/auth`)
-* `POST /api/auth/register`
-  * **Headers**: `x-csrf-token` (required)
-  * **Body**: `{ username, email, password }`
-  * **Rate Limit**: 10 req / 15 min (IP-based)
-  * **Response**: `201 Created` with created user details (excluding password).
-* `GET /api/auth/verify-email`
-  * **Query**: `token`
-  * **Response**: `200 OK` (HTML page) on success, `410 Gone` (expired), `400/401` (invalid).
-* `POST /api/auth/resend-verify-email`
-  * **Headers**: `x-csrf-token` (required)
-  * **Body**: `{ email }`
-  * **Rate Limit**: 3 req / 15 min (IP + Email based)
-  * **Response**: `200 OK`.
-* `POST /api/auth/login`
-  * **Headers**: `x-csrf-token` (required)
-  * **Body**: `{ email, password }`
-  * **Rate Limit**: 10 req / 15 min (IP-based)
-  * **Response**: `200 OK` with user data + sets `token` HTTP-only cookie.
-* `GET /api/auth/me`
-  * **Access**: Protected (`token` cookie required)
-  * **Rate Limit**: 300 req / 15 min (Global)
-  * **Response**: `200 OK` with current user object.
-* `POST /api/auth/logout`
-  * **Access**: Protected
-  * **Headers**: `x-csrf-token` (required)
-  * **Response**: `200 OK`, clears `token` cookie, blacklists token in Redis.
-* `POST /api/auth/forgot-password`
-  * **Headers**: `x-csrf-token` (required)
-  * **Body**: `{ email }`
-  * **Rate Limit**: 3 req / 15 min (IP + Email based)
-  * **Response**: `200 OK`.
-* `POST /api/auth/reset-password`
-  * **Headers**: `x-csrf-token` (required)
-  * **Body**: `{ token, password }`
-  * **Rate Limit**: 3 req / 15 min
-  * **Response**: `200 OK`.
-* `GET /api/auth/google`
-  * **Query**: `mode` (`signup` | `login`)
-  * **Response**: `302 Redirect` to Google OAuth consent screen.
-* `GET /api/auth/google/callback`
-  * **Query**: `code`, `state`
-  * **Response**: `302 Redirect` to Frontend `/` (with auth cookie) or `/login?error=...`.
+#### 4.2.1 Authentication Endpoints (`/api/auth`)
 
-#### Chat & Messaging (`/api/chats`)
-* `POST /api/chats/message`
-  * **Access**: Protected
-  * **Body**: `{ message: string, chatId?: string, fileIds?: string[] }`
-  * **Rate Limits**: 10 req / min (burst per user) + 50 req / 24 hours (daily per user)
-  * **Response**: `200 OK` with `Content-Type: application/x-ndjson; charset=utf-8` stream.
-* `GET /api/chats`
-  * **Access**: Protected
-  * **Query**: `cursor` (ISO date string), `limit` (int, default 20, max 50)
-  * **Response**: `200 OK` with `{ chats, hasMore, nextCursor }`.
-* `GET /api/chats/messages/:chatId`
-  * **Access**: Protected
-  * **Params**: `chatId` (Mongo ObjectId)
-  * **Query**: `cursor` (Mongo ObjectId), `limit` (int, default 20, max 50)
-  * **Response**: `200 OK` with `{ messages, hasMore, nextCursor }`.
-* `PATCH /api/chats/pinned/:chatId`
-  * **Access**: Protected
-  * **Response**: `200 OK` with updated chat document.
-* `PATCH /api/chats/rename/:chatId`
-  * **Access**: Protected
-  * **Body**: `{ newTitle: string }` (1-60 chars)
-  * **Response**: `200 OK` with updated chat document.
-* `DELETE /api/chats/delete/:chatId`
-  * **Access**: Protected
-  * **Response**: `200 OK`, deletes chat, messages, file metadata, and schedules Cloudinary deletion.
+##### `POST /api/auth/register`
+* **Access**: Public \| **Rate Limit**: 10 req / 15 min (IP-based)
+* **Headers**: `Content-Type: application/json`, `x-csrf-token`
+* **Request Body**:
+```json
+{
+  "username": "sourav_giri",
+  "email": "sourav@example.com",
+  "password": "SecurePassword123!"
+}
+```
+* **Responses**:
+  * `201 Created`: `{ "success": true, "message": "User registered successfully", "data": { "id": "...", "username": "...", "email": "..." } }`
+  * `400 Bad Request`: Validation failure.
+  * `409 Conflict`: Username or email already registered.
 
-#### Files (`/api/files`)
-* `POST /api/files`
-  * **Access**: Protected
-  * **Content-Type**: `multipart/form-data` (field: `file`)
-  * **Rate Limit**: 30 uploads / hour (per user)
-  * **Response**: `201 Created` with `{ fileId, name, mime, size, url, status, mode }`.
-* `GET /api/files/:fileId`
-  * **Access**: Protected
-  * **Response**: `200 OK` with `{ fileId, name, status, mode, failReason }`.
+##### `GET /api/auth/verify-email`
+* **Access**: Public
+* **Query Parameters**: `token` (JWT string)
+* **Responses**: `200 OK` (HTML confirmation), `410 Gone` (Expired token), `400 Bad Request`.
 
-#### System Health
-* `GET /api/health`
-  * **Response**: `200 OK` with `{ status: "ok", uptime, timestamp }`.
+##### `POST /api/auth/login`
+* **Access**: Public \| **Rate Limit**: 10 req / 15 min (IP-based)
+* **Headers**: `Content-Type: application/json`, `x-csrf-token`
+* **Request Body**: `{ "email": "sourav@example.com", "password": "SecurePassword123!" }`
+* **Responses**:
+  * `200 OK`: Sets HTTP-only `token` cookie; returns user profile object.
+  * `401 Unauthorized`: Invalid credentials.
+  * `403 Forbidden`: Account unverified (`verified === false`).
 
----
+##### `GET /api/auth/me`
+* **Access**: Protected (Session cookie required)
+* **Responses**: `200 OK` with user profile object (`id`, `username`, `email`, `verified`).
 
-## 5. Data Models & Database Design (MongoDB)
+##### `POST /api/auth/logout`
+* **Access**: Protected
+* **Responses**: `200 OK`, clears `token` cookie, blacklists token in Redis.
 
-### 5.1 User Collection (`users`)
-| Field | Type | Attributes | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Auto-generated PK | Unique identifier |
-| `username` | String | Required, Unique, Trim, Lowercase, 3-30 chars, regex `^[a-z0-9_]{3,30}$` | User handle |
-| `email` | String | Required, Unique, Trim, Lowercase, regex `^\S+@\S+\.\S+$` | User email |
-| `password` | String | Required, 8-72 chars, hidden (`select: false`), regex | Bcrypt hashed password |
-| `verified` | Boolean | Default: `false` | Email verification status |
-| `createdAt` | Date | Timestamps | Account creation timestamp |
-| `updatedAt` | Date | Timestamps | Last update timestamp |
+##### `POST /api/auth/forgot-password`
+* **Access**: Public \| **Rate Limit**: 3 req / 15 min
+* **Request Body**: `{ "email": "sourav@example.com" }`
+* **Responses**: `200 OK` (dispatches reset email).
 
-### 5.2 Chat Collection (`chats`)
-| Field | Type | Attributes | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Auto-generated PK | Unique conversation identifier |
-| `user` | ObjectId | Ref: `User`, Required, Index | Owner user ID |
-| `title` | String | Required, Trim, Max: 60 chars | Title of the conversation |
-| `isPinned` | Boolean | Default: `false` | Whether chat is pinned in UI |
-| `createdAt` | Date | Timestamps | Conversation creation date |
-| `updatedAt` | Date | Timestamps | Last message / update date |
+##### `POST /api/auth/reset-password`
+* **Access**: Public \| **Rate Limit**: 3 req / 15 min
+* **Request Body**: `{ "token": "...", "password": "NewSecurePassword123!" }`
+* **Responses**: `200 OK` upon successful update.
 
-* **Compound Index**: `{ user: 1, isPinned: 1, updatedAt: -1 }`
+#### 4.2.2 Google OAuth 2.0 (`/api/auth/google`)
+* `GET /api/auth/google?mode=signup|login`: Redirects to Google consent screen.
+* `GET /api/auth/google/callback?code=...&state=...`: Handles OAuth callback and sets session cookie.
 
-### 5.3 Message Collection (`messages`)
-| Field | Type | Attributes | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Auto-generated PK | Unique message identifier |
-| `chat` | ObjectId | Ref: `Chat`, Required, Index | Associated chat ID |
-| `content` | String | Required, Trim | Message text / Markdown |
-| `role` | String | Required, Enum: `['user', 'ai']` | Message sender |
-| `attachments` | [ObjectId] | Array of Ref: `File` | Attached files |
-| `createdAt` | Date | Timestamps | Message creation time |
-| `updatedAt` | Date | Timestamps | Message update time |
+#### 4.2.3 Chat & Messaging Endpoints (`/api/chats`)
 
-* **Compound Index**: `{ chat: 1, _id: -1 }`
+##### `POST /api/chats/message`
+* **Access**: Protected \| **Rate Limits**: 10 req/min (burst) + 50 req/24hr (daily)
+* **Request Body**:
+```json
+{
+  "message": "Summarise my 3 latest emails and create a meeting notes PDF",
+  "chatId": "651f8a7e9b0123456789abcd",
+  "fileIds": ["651f8a7e9b0123456789abce"]
+}
+```
+* **Response**: `200 OK` with `Content-Type: application/x-ndjson; charset=utf-8` stream.
 
-### 5.4 File Collection (`files`)
-| Field | Type | Attributes | Description |
-|---|---|---|---|
-| `_id` | ObjectId | Auto-generated PK | Unique file identifier |
-| `user` | ObjectId | Ref: `User`, Required, Index | Uploading user ID |
-| `chat` | ObjectId | Ref: `Chat`, Default: `null`, Index | Linked chat ID |
-| `name` | String | Required, Trim | Original file name |
-| `mime` | String | Required | Detected MIME type |
-| `size` | Number | Required | File size in bytes |
-| `url` | String | Required | Cloudinary secure URL |
-| `publicId` | String | Required | Cloudinary public asset ID |
-| `resourceType` | String | Required, Enum: `["image", "raw"]` | Cloudinary asset type |
-| `status` | String | Enum: `["processing", "ready", "failed"]`, Default: `"processing"` | Processing status |
-| `mode` | String | Enum: `["image", "inline", "rag"]`, Default: `null` | Context injection mode |
-| `failReason` | String | Default: `null` | Error explanation if failed |
-| `extractedText`| String | Hidden (`select: false`) | Extracted textual content |
-| `createdAt` | Date | Timestamps | File upload timestamp |
-| `updatedAt` | Date | Timestamps | File record update timestamp |
+##### `GET /api/chats`
+* **Access**: Protected
+* **Query Parameters**: `cursor` (ISO Date), `limit` (int, default 20, max 50)
+* **Response**: `200 OK` with `{ "chats": [...], "hasMore": boolean, "nextCursor": "..." }`.
+
+##### `GET /api/chats/messages/:chatId`
+* **Access**: Protected
+* **Query Parameters**: `cursor` (ObjectId), `limit` (int, default 20, max 50)
+* **Response**: `200 OK` with `{ "messages": [...], "hasMore": boolean, "nextCursor": "..." }`.
+
+##### `PATCH /api/chats/pinned/:chatId`
+* **Access**: Protected
+* **Response**: `200 OK` toggling pinned state.
+
+##### `PATCH /api/chats/rename/:chatId`
+* **Access**: Protected
+* **Request Body**: `{ "newTitle": "Sprint Planning Notes" }`
+* **Response**: `200 OK` with updated chat.
+
+##### `DELETE /api/chats/delete/:chatId`
+* **Access**: Protected
+* **Response**: `200 OK`, deletes chat, messages, file records, and purges Cloudinary assets.
+
+#### 4.2.4 File Management Endpoints (`/api/files`)
+* `POST /api/files`: Accepts `multipart/form-data` (key: `file`), rate limited to 30 uploads/hour. Returns `201 Created` with file metadata.
+* `GET /api/files/:fileId`: Returns processing status (`processing`, `ready`, `failed`).
+
+#### 4.2.5 Workspace Connectors Endpoints (`/api/connectors`)
+* `GET /api/connectors`: Returns connection status list (`gmail`, `calendar`, `drive`) with connected email addresses.
+* `POST /api/connectors/google/:service/start`: Generates OAuth consent URL for specific service.
+* `GET /api/connectors/google/callback`: Public callback endpoint validating state from Redis.
+* `POST /api/connectors/actions/:id/confirm`: Authorizes and triggers execution of a pending write action.
+* `POST /api/connectors/actions/:id/cancel`: Cancels and discards a pending write action.
+* `DELETE /api/connectors/:service`: Disconnects service and deletes encrypted refresh token.
+
+#### 4.2.6 Generated Files Endpoints (`/api/generated-files`)
+* `GET /api/generated-files/:token`: Public download route serving binary file stream.
+
+#### 4.2.7 System Diagnostics
+* `GET /api/health`: Returns `{ "status": "ok", "uptime": 1234.56, "timestamp": 1728388000000 }`.
 
 ---
 
-## 6. Redis Key Patterns & Architecture
+## 5. Data Models & Database Schemas
 
-| Key Pattern | Data Type | TTL | Purpose |
-|---|---|---|---|
-| `user:<userId>` | String (JSON) | 300 seconds | User session cache for `identifyUser` middleware |
-| `blacklist:token:<tokenHash>` | String ("1") | Remaining JWT TTL | Blacklisted JWT after logout |
-| `email-verification:<userId>` | String (SHA-256 hash) | 300 seconds | Verify email token lookup |
-| `password-reset:user:<userId>`| String (SHA-256 hash) | 300 seconds | Password reset token lookup |
-| `global-rate-limit:<ip>` | Rate-limit counter | 15 minutes | Global API rate limiting |
-| `auth-rate-limit:<ip>` | Rate-limit counter | 15 minutes | Login / Signup rate limiting |
-| `forgotPassword-rate-limit:<ip>` | Rate-limit counter | 15 minutes | Forgot password rate limiting |
-| `sendEmail-rate-limit:<ip>` | Rate-limit counter | 15 minutes | Resend email rate limiting |
-| `email-rate-limit:<email>` | Rate-limit counter | 15 minutes | Account enumeration rate limit |
-| `rl:msg:min:<userId>` | Rate-limit counter | 60 seconds | User message burst limit (10/min) |
-| `rl:msg:day:<userId>` | Rate-limit counter | 24 hours | User message daily quota (50/day) |
-| `rl:file:hour:<userId>` | Rate-limit counter | 60 minutes | User file upload limit (30/hour) |
-| `cooldown:provider:<name>` | String ("1") | 30s - 600s | AI provider cooldown flag |
-| `failures:provider:<name>` | Integer | 60 seconds | AI provider failure count window |
+### 5.1 MongoDB Schemas (Mongoose)
+
+#### 5.1.1 `User` Model (`users` collection)
+```javascript
+{
+  username: { type: String, required: true, unique: true, lowercase: true, trim: true },
+  email:    { type: String, required: true, unique: true, lowercase: true, trim: true },
+  password: { type: String, required: true, select: false },
+  verified: { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}
+```
+
+#### 5.1.2 `Chat` Model (`chats` collection)
+```javascript
+{
+  user:      { type: ObjectId, ref: 'User', required: true, index: true },
+  title:     { type: String, required: true, trim: true, maxlength: 60 },
+  isPinned:  { type: Boolean, default: false },
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now }
+}
+// Compound Index: { user: 1, isPinned: 1, updatedAt: -1 }
+```
+
+#### 5.1.3 `Message` Model (`messages` collection)
+```javascript
+{
+  chat:        { type: ObjectId, ref: 'Chat', required: true, index: true },
+  content:     { type: String, required: true, trim: true },
+  role:        { type: String, required: true, enum: ['user', 'ai'] },
+  attachments: [{ type: ObjectId, ref: 'File' }],
+  createdAt:   { type: Date, default: Date.now },
+  updatedAt:   { type: Date, default: Date.now }
+}
+// Compound Index: { chat: 1, _id: -1 }
+```
+
+#### 5.1.4 `File` Model (`files` collection)
+```javascript
+{
+  user:         { type: ObjectId, ref: 'User', required: true, index: true },
+  chat:         { type: ObjectId, ref: 'Chat', default: null, index: true },
+  name:         { type: String, required: true, trim: true },
+  mime:         { type: String, required: true },
+  size:         { type: Number, required: true },
+  url:          { type: String, required: true },
+  publicId:     { type: String, required: true },
+  resourceType: { type: String, required: true, enum: ['image', 'raw'] },
+  status:       { type: String, enum: ['processing', 'ready', 'failed'], default: 'processing' },
+  mode:         { type: String, enum: ['image', 'inline', 'rag'], default: null },
+  failReason:   { type: String, default: null },
+  extractedText:{ type: String, select: false },
+  createdAt:    { type: Date, default: Date.now },
+  updatedAt:    { type: Date, default: Date.now }
+}
+```
+
+#### 5.1.5 `ConnectorAccount` Model (`connectoraccounts` collection)
+```javascript
+{
+  userId:         { type: ObjectId, ref: 'User', required: true, index: true },
+  service:        { type: String, enum: ['gmail', 'calendar', 'drive'], required: true },
+  googleEmail:    { type: String, lowercase: true, trim: true },
+  scopes:         [{ type: String }],
+  refreshTokenEnc:{ type: String, required: true, select: false }, // AES-256 encrypted
+  createdAt:      { type: Date, default: Date.now },
+  updatedAt:      { type: Date, default: Date.now }
+}
+// Compound Unique Index: { userId: 1, service: 1 } (unique: true)
+```
+
+#### 5.1.6 `GeneratedFile` Model (`generatedfiles` collection)
+```javascript
+{
+  user:      { type: ObjectId, ref: 'User', index: true },
+  token:     { type: String, required: true, unique: true }, // 32-char hex token
+  name:      { type: String, required: true },
+  mime:      { type: String, required: true },
+  size:      { type: Number, required: true },
+  data:      { type: Buffer, required: true, select: false },
+  createdAt: { type: Date, default: Date.now, expires: 2592000 } // 30-day TTL auto-purge
+}
+```
 
 ---
 
-## 7. Non-Functional Requirements
+### 5.2 Redis Architecture & Key Schema
 
-### 7.1 Security & Data Protection
-* **HTTP Security Headers**: Implemented using `helmet` middleware.
-* **NoSQL Injection Sanitization**: Applied across all incoming request bodies and queries using `@exortek/express-mongo-sanitize`.
-* **CSRF Protection**: State-changing endpoints (`/register`, `/login`, `/logout`, `/resend-verify-email`, `/forgot-password`, `/reset-password`) validate custom request headers or origin checks via `csrf.middleware.js`.
-* **Cookie Security**: Authentication `token` cookie configured with `httpOnly: true`, `secure: true` in production, and `sameSite: "strict"` (dev) or `"none"` (prod). State cookie for Google OAuth uses `sameSite: "lax"`.
-* **Secret Segregation**: Distinct JWT secrets configured for general session authentication (`JWT_SECRET_KEY`), email verification (`EMAIL_VERIFICATION_JWT_SECRET_KEY`), and password resets (`RESET_PASSWORD_JWT_SECRET_KEY`).
-* **Token Hashing**: Tokens stored in Redis are SHA-256 hashed to prevent plaintext credential exposure in the cache.
+| Key Pattern | Data Structure | TTL | Subsystem Purpose |
+|---|---|---|---|
+| `user:<userId>` | String (JSON) | 300s | Authenticated user session cache |
+| `blacklist:token:<tokenHash>` | String ("1") | Remaining JWT TTL | Revoked session token blacklist |
+| `email-verification:<userId>` | String (SHA-256) | 300s | Email verification token digest |
+| `password-reset:user:<userId>` | String (SHA-256) | 300s | Password reset token digest |
+| `global-rate-limit:<ip>` | Counter | 900s (15 min) | Global DDoS protection (300 req limit) |
+| `auth-rate-limit:<ip>` | Counter | 900s (15 min) | Auth brute-force mitigation (10 req limit) |
+| `forgotPassword-rate-limit:<ip>`| Counter | 900s (15 min) | Password reset brute-force limit (3 req) |
+| `sendEmail-rate-limit:<ip>` | Counter | 900s (15 min) | Resend email rate limiter (3 req) |
+| `email-rate-limit:<email>` | Counter | 900s (15 min) | Account enumeration limiter (5 req) |
+| `rl:msg:min:<userId>` | Counter | 60s (1 min) | Chat burst limiter (10 msg / min) |
+| `rl:msg:day:<userId>` | Counter | 86400s (24 hr) | Chat daily usage quota (50 msg / day) |
+| `rl:file:hour:<userId>` | Counter | 3600s (1 hr) | File upload throttle (30 uploads / hr) |
+| `cooldown:provider:<name>` | String ("1") | 30s – 600s | Circuit breaker active cooldown flag |
+| `failures:provider:<name>` | Counter | 60s | Circuit breaker rolling failure counter |
+| `connector:state:<state>` | String (JSON) | 600s | OAuth state data during connector linking |
+| `connector:action:<id>` | String (JSON) | 900s (15 min) | Pending HITL action payload and preview |
+| `connector:action:dedupe:<hash>`| String (actionId) | 120s (2 min) | De-duplication buffer across AI retries |
 
-### 7.2 Reliability & Fault Tolerance
-* **Multi-Provider Fallback**: AI chat routing dynamically fails over across Gemini, Groq, Mistral, OpenRouter, and Cohere.
-* **Client Disconnect Handling**: Stream request abort listener (`req.on("close")`) triggers `AbortController.abort()` to terminate LLM execution.
-* **Asynchronous Background Processing**: Email delivery and PDF parsing run on background BullMQ workers, isolating external I/O latency and failures from HTTP request cycles.
-* **Storage Cleanup Best Effort**: File deletion from Cloudinary runs via `Promise.allSettled` to prevent storage API errors from aborting database cleanup.
+---
 
-### 7.3 Performance
-* **Stream Response Latency**: Headers flushed immediately on first chunk (`flushHeaders()`) to minimize time-to-first-token for the user.
-* **Redis Caching**: User profile requests (`/api/auth/me`) hit Redis cache before falling back to MongoDB.
-* **Database Indexing**: Compound indexes on `{ user: 1, isPinned: 1, updatedAt: -1 }` (chats) and `{ chat: 1, _id: -1 }` (messages) ensure fast cursor pagination.
-* **File Upload Throttling Before Buffering**: `fileUploadLimit` rate limiter runs before Multer parses file body, preventing memory exhaustion from abusive requests.
+## 6. Non-Functional Requirements
+
+### 6.1 Security & Cryptographic Standards
+* **NFR-SEC-01 (Transport Security)**: All client-to-server and server-to-external communication **MUST** use TLS 1.3 (HTTPS / WSS).
+* **NFR-SEC-02 (Data at Rest)**: Third-party OAuth refresh tokens **MUST** be encrypted via AES-256 with Galois/Counter Mode or CBC using `CONNECTOR_ENCRYPTION_KEY`. Plaintext tokens must never appear in database backups or query outputs.
+* **NFR-SEC-03 (NoSQL Injection & Sanitization)**: All request parameters, body attributes, and query fields **MUST** be sanitized using `@exortek/express-mongo-sanitize` to strip `$` and `.` operators.
+* **NFR-SEC-04 (CSRF Mitigation)**: Mutation endpoints **MUST** enforce CSRF validation (`csrfProtection` middleware) by validating explicit custom request headers.
+* **NFR-SEC-05 (HTTP Hardening)**: Express server **MUST** apply HTTP security headers via `helmet` (HSTS, Content-Security-Policy, X-Frame-Options, X-Content-Type-Options).
+
+### 6.2 Reliability, Availability & Fault Tolerance
+* **NFR-REL-01 (High Availability Fallback)**: The AI reasoning engine **MUST** maintain >= 99.9% uptime by automatically cascading through five heterogeneous AI providers (Gemini -> Groq -> Mistral -> OpenRouter -> Cohere).
+* **NFR-REL-02 (Asynchronous Decoupling)**: Slow I/O processes (email delivery and PDF document parsing) **MUST** execute on decoupled BullMQ queues to ensure primary web worker event loops remain unblocked.
+* **NFR-REL-03 (Resource Conservation)**: Disconnected client streams **MUST** automatically abort LLM downstream generation via `AbortController` within 250ms of socket close.
+
+### 6.3 Performance & Scalability
+* **NFR-PERF-01 (Time-to-First-Token)**: Streaming headers **MUST** flush immediately (`flushHeaders()`) ensuring initial text chunks reach client devices in under 1,500ms on healthy primary providers.
+* **NFR-PERF-02 (Pre-Buffer Upload Throttling)**: `fileUploadLimit` rate limiter **MUST** validate upload quotas prior to Multer memory buffering to protect backend servers from out-of-memory (OOM) attacks.
+* **NFR-PERF-03 (Database Query Efficiency)**: Message queries and conversation lists **MUST** utilize cursor-based pagination backed by compound indexes, executing queries in under 50ms for collections exceeding 1,000,000 documents.
+
+### 6.4 Privacy by Design & Compliance
+* **NFR-PRV-01 (Ephemeral Context Storage)**: Google Workspace data (emails, calendar entries, drive contents) **MUST NOT** be saved to persistent database collections; data exists exclusively in volatile process memory during agent execution.
+* **NFR-PRV-02 (Zero AI Training Policy)**: User personal data and third-party connector streams **SHALL NEVER** be transmitted to model providers for training purposes.
+* **NFR-PRV-03 (Immediate Data Deletion)**: Disconnecting any connector **MUST** immediately purge the encrypted credentials from the database.
+
+---
+
+## 7. Appendices & Configuration Matrix
+
+### 7.1 Environment Variables Reference
+
+| Variable Name | Environment | Required | Description |
+|---|---|---|---|
+| `NODE_ENV` | Backend | Yes | Execution mode (`development` \| `production`) |
+| `PORT` | Backend | Yes | HTTP listening port (e.g. `3000`) |
+| `BACKEND_URL` | Backend | Yes | Base URL of API server (e.g. `http://localhost:3000`) |
+| `FRONTEND_URL` | Backend | Yes | Base URL of client application (e.g. `http://localhost:5173`) |
+| `LOG_LEVEL` | Backend | Yes | Pino log verbosity (`debug`, `info`, `warn`, `error`) |
+| `MONGO_URI` | Backend | Yes | MongoDB Atlas connection string |
+| `REDIS_HOST` | Backend | Yes | Redis server hostname / IP |
+| `REDIS_PORT` | Backend | Yes | Redis server port (e.g. `6379`) |
+| `REDIS_PASSWORD` | Backend | Yes | Redis authentication password (empty if local) |
+| `BCRYPT_GEN_SALT` | Backend | Yes | Salt work factor for password hashing (e.g. `10`) |
+| `JWT_SECRET_KEY` | Backend | Yes | Secret key for signing primary session tokens |
+| `EMAIL_VERIFICATION_JWT_SECRET_KEY` | Backend | Yes | Secret key for email verification links |
+| `RESET_PASSWORD_JWT_SECRET_KEY` | Backend | Yes | Secret key for password reset tokens |
+| `CONNECTOR_ENCRYPTION_KEY` | Backend | Yes | 32-character hex secret for AES refresh token encryption |
+| `GOOGLE_CLIENT_ID` | Backend | Yes | Google Cloud OAuth 2.0 Web Client ID |
+| `GOOGLE_CLIENT_SECRET` | Backend | Yes | Google Cloud OAuth 2.0 Client Secret |
+| `RESEND_API_KEY` | Backend | Yes | Resend API key for transactional email delivery |
+| `CLOUDINARY_CLOUD_NAME` | Backend | Yes | Cloudinary cloud account namespace |
+| `CLOUDINARY_API_KEY` | Backend | Yes | Cloudinary asset management API key |
+| `CLOUDINARY_API_SECRET` | Backend | Yes | Cloudinary API secret |
+| `CLOUDFLARE_ACCOUNT_ID` | Backend | Yes | Cloudflare account ID for Workers AI |
+| `CLOUDFLARE_API_TOKEN` | Backend | Yes | Cloudflare API token with Workers AI permission |
+| `TVLY_API_KEY` | Backend | Yes | Tavily AI search engine API key |
+| `GEMINI_API_KEY` | Backend | Yes | Google Gemini API key |
+| `GROQ_API_KEY` | Backend | Yes | Groq Cloud API key |
+| `MISTRAL_API_KEY` | Backend | Yes | Mistral AI platform API key |
+| `OPENROUTER_API_KEY` | Backend | Yes | OpenRouter multi-model gateway API key |
+| `COHERE_API_KEY` | Backend | Yes | Cohere platform API key |
+| `VITE_BACKEND_API` | Frontend | Yes | Backend API origin URL consumed by Axios / Sockets |
+
+---
+
+### 7.2 Requirements Traceability Matrix
+
+| Requirement ID | Module / Service | File Path References | Test & Verification Method |
+|---|---|---|---|
+| `FR-AUTH-01..08` | Identity & Auth | `backend/src/routes/auth.route.js`<br>`backend/src/controllers/auth.controller.js` | Integration Test & JWT Verification |
+| `FR-CHAT-01..02` | Stream & AI Routing | `backend/src/ai/modelRouting.js`<br>`backend/src/controllers/chat.controller.js` | Streaming NDJSON & Provider Failover Test |
+| `FR-CHAT-03` | Agent & Tools | `backend/src/agent/agent.js`<br>`backend/src/services/image.service.js` | Tool Invocation & Mock Execution |
+| `FR-CONN-01..06` | Workspace Connectors | `backend/src/connectors/index.js`<br>`backend/src/executors/actions.executors.js`<br>`backend/src/services/actions.service.js` | Google OAuth Simulation & HITL Confirmation Card Flow |
+| `FR-GEN-01..03` | File Generation | `backend/src/tools/generatedfiles.tools.js`<br>`backend/src/routes/generatedfiles.route.js` | Binary Stream & Download Verification |
+| `FR-FILE-01..04` | File Ingestion | `backend/src/middlewares/upload.middleware.js`<br>`backend/src/workers/file.worker.js` | Magic-Byte Inspection & BullMQ Processing Test |
+| `NFR-SEC-01..05` | Security Hardening | `backend/src/middlewares/csrf.middleware.js`<br>`backend/src/app.js` | OWASP Vulnerability & Pen-Test Audit |
+| `NFR-REL-01..03` | Resiliency & Limits | `backend/src/middlewares/rateLimiter.middleware.js`<br>`backend/src/ai/cooldown.js` | Redis Stress Testing & Load Generation |
+
+---
+
+<div align="center">
+
+**Inquis Engineering Specification Document**  
+*Maintained by Sourav Giri and the Inquis Development Team*
+
+</div>
